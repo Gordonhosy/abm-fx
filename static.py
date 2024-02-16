@@ -1,5 +1,6 @@
 import numpy as np
 from corporates import *
+from central_bank import *
 
 # This class to the agent input to the model
 class all_agents():
@@ -7,7 +8,9 @@ class all_agents():
     Agents to be put into the model
     '''
     def __init__(self):
+
         self.corporates = [corporate_v0()]
+        self.central_banks = [central_bank_v0()]
         # TO DO: include different types of agents here
 
         
@@ -21,7 +24,16 @@ class corporate_v0():
         self.params = params_corporate_v0()
         self.agent = agent_corporate_v0
 
-        
+class central_bank_v0():
+    '''
+    To specify central bank version 0
+    '''
+    def __init__(self):
+        self.name = 'Central Bank V0' # name of the agent 
+        self.params = params_central_bank_v0() # parameters setting for central bank
+        self.agent = agent_central_bank_v0 # general agent model for central bank
+
+
 # This section is to set the hyperparameters of each type of agent
 class params_corporate_v0():
     '''
@@ -37,7 +49,14 @@ class params_corporate_v0():
         self.vision_max = 1
         
 
-        
+class params_central_bank_v0():
+    '''
+    parameter for a central bank
+    '''
+    def __init__(self):
+        self.number_of_central_bank = 2
+
+
 # This section is to store maps in form of arrays      
 # TO DO: a better map
 class static_map_v0():

@@ -24,3 +24,26 @@ def random_corporate(agent_id, corporate_type, static_map, model):
                            cost_currencyA = cost_currencyA,
                            cost_currencyB = cost_currencyB,
                            vision = vision)
+
+
+def random_central_bank(agent_id, central_bank_type, static_map, model):
+    '''
+    generate random central bank with random initial economic situation(or not just make two completely different macro environment)
+    '''
+    x = int(np.random.uniform(0, static_map.width))
+    y = int(np.random.uniform(0, static_map.height))
+    interest_rate = np.random.uniform(0.00, 0.03)
+    inflation_rate = np.random.uniform(0.01, 0.08)
+    target_inflation_rate = 0.02
+
+    agent_central_bank = central_bank_type.agent(agent_id, 
+                                                 model, 
+                                                 (x,y), 
+                                                 moore=False, 
+                                                 interest_rate=interest_rate, 
+                                                 inflation_rate=inflation_rate, 
+                                                 target_inflation_rate=target_inflation_rate)
+
+    # print("Created Agent Type:", type(agent_central_bank))
+
+    return agent_central_bank
