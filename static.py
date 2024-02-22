@@ -1,6 +1,7 @@
 import numpy as np
 from corporates import *
 from central_bank import *
+from banks import *
 
 # This class to the agent input to the model
 class all_agents():
@@ -11,6 +12,7 @@ class all_agents():
 
         self.corporates = [corporate_v0()]
         self.central_banks = [central_bank_v0()]
+        self.banks = [local_bank(), international_bank()]
         # TO DO: include different types of agents here
 
         
@@ -33,6 +35,24 @@ class central_bank_v0():
         self.params = params_central_bank_v0() # parameters setting for central bank
         self.agent = agent_central_bank_v0 # general agent model for central bank
 
+class local_bank():
+    '''
+    To specify local bank
+    '''
+    def __init__(self):
+        self.name = 'Local Bank'
+        self.params = params_local_bank()
+        self.agent = agent_bank
+        
+class international_bank():
+    '''
+    To specify internatinoal bank
+    '''
+    def __init__(self):
+        self.name = 'International Bank'
+        self.params = params_international_bank()
+        self.agent = agent_international_bank
+        
 
 # This section is to set the hyperparameters of each type of agent
 class params_corporate_v0():
@@ -48,13 +68,46 @@ class params_corporate_v0():
         self.vision_min = 1
         self.vision_max = 1
         
-
 class params_central_bank_v0():
     '''
-    parameter for a central bank
+    parameter for a central bankS
     '''
     def __init__(self):
         self.number_of_central_bank = 2
+
+class params_local_bank():
+    '''
+    parameters for a local bank
+    '''
+    def __init__(self):
+        self.init_pos = [(10,10), (20,10), (30,10), (40,10), (10,40), (20,40), (30,40), (40,40)]
+        self.local_asset_min = 250
+        self.local_asset_max = 500
+        self.local_costs_min = 4
+        self.local_costs_max = 7
+        self.foreign_asset_min = 125
+        self.foreign_asset_max = 250
+        self.foreign_costs_min = 3
+        self.foreign_costs_max = 5
+        self.vision_min = 20
+        self.vision_max = 20
+        
+class params_international_bank():
+    '''
+    parameters for an international bank
+    '''
+    def __init__(self):
+        self.init_pos = [(25, 15), (25,35)]
+        self.local_asset_min = 2000
+        self.local_asset_max = 4000
+        self.local_costs_min = 24
+        self.local_costs_max = 40
+        self.foreign_asset_min = 1000
+        self.foreign_asset_max = 2000
+        self.foreign_costs_min = 12
+        self.foreign_costs_max = 20
+        self.vision_min = 50
+        self.vision_max = 50
 
 
 # This section is to store maps in form of arrays      

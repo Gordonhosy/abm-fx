@@ -25,6 +25,13 @@ class agent_corporate_v0(mesa.Agent):
         self.vision = vision
         self.traded_prices = []
         self.traded_partners = []
+        self.traded_amount = []
+        self.trade_direction = None
+        self.amount = None
+        self.price = None
+        self.improve_utility = 1.05 
+        
+        
 
     
     def is_occupied(self, pos):
@@ -91,6 +98,11 @@ class agent_corporate_v0(mesa.Agent):
 
         # 3. Find the best cell to move to
         options = [neighbors_available[i] for i in np.argwhere(utilities == np.amax(utilities)).flatten()]
+        #print('####################')
+        #print(self.currencyA, self.currencyB, self.cost_currencyA, self.cost_currencyB) 
+        #print(neighbors_available)
+        #print(utilities)
+        #print(options)
         random.shuffle(options)
         final_decision = options[0] # random choice if more than one max
         
@@ -128,118 +140,33 @@ class agent_corporate_v0(mesa.Agent):
         if (self.currencyA < 0) | (self.currencyB < 0):
             self.model.grid.remove_agent(self)
             self.model.schedule.remove(self)
-    
-    
-    def calculate_MRS(self):
-        return (self.currencyB / self.cost_currencyB) / (self.currencyA / self.cost_currencyA)
-    
-    
-    def sell_currencyB(self, opponent, currencyA, currencyB):
+
+
+    def put_order(self):
         '''
-        Function to execute a trade
+        Function for corporates to put orders to trade FX
+        The aim is to improve the utility by a certain amount
         '''
-        self.currencyA += currencyA
-        opponent.currencyA -= currencyA
-        self.currencyB -= currencyB
-        opponent.currencyB += currencyB
+        target_utility = self.calculate_utility(self.currencyA, self.currencyB)*self.improve_utility
+        # target the equilibrium at the new utility
+        cost_total = self.cost_currencyA + self.cost_currencyB
+        target_currencyA = ((self.cost_currencyB/self.cost_currencyA)*(target_utility**(-cost_total/self.cost_currencyB)))**(-1/(1+(self.cost_currencyA/self.cost_currencyB)))
+        target_currencyB = (target_utility/(target_currencyA**(self.cost_currencyA/cost_total)))**(cost_total/self.cost_currencyB)
         
-    
-    def maybe_sell_currencyB(self, opponent, price, utility_self, utility_opponent):
-        '''
-        Function to see if both are better off after a trade
-        '''
-        if price >= 1:
-            currencyA_exchange = 1
-            currencyB_exchange = round(price, 4)
+        change_currencyA = target_currencyA - self.currencyA
+        change_currencyB = target_currencyB - self.currencyB
+        
+        # the change need to be in opposite direction for a trade to happen
+        if (change_currencyA * change_currencyB < 0) & (not math.isclose(change_currencyA, 0)):
+            if change_currencyA < 0:
+                self.trade_direction = 'short'
+                self.amount = -change_currencyA
+                self.price =  -round(change_currencyB/change_currencyA, 4)
+            else:
+                self.trade_direction = 'long'
+                self.amount = change_currencyA
+                self.price = -round(change_currencyB/change_currencyA, 4)
         else:
-            currencyA_exchange = round(1/price, 4)
-            currencyB_exchange = 1
-        
-        new_self_currencyA = self.currencyA + currencyA_exchange
-        new_opponent_currencyA = opponent.currencyA - currencyA_exchange
-        new_self_currencyB = self.currencyB - currencyB_exchange
-        new_opponent_currencyB = opponent.currencyB + currencyB_exchange
-        
-        # double check if both have enough currencies
-        if ((new_self_currencyA < 0) | (new_opponent_currencyA < 0)) | ((new_self_currencyB < 0) | (new_opponent_currencyB < 0)):
-            return False
-        
-        # check if both are better off
-        both_better = (self.calculate_utility(new_self_currencyA, new_self_currencyB) > utility_self) \
-                        & (self.calculate_utility(new_opponent_currencyA, new_opponent_currencyB) > utility_opponent)
-        
-        # check if MRS are not crossing
-        mrs_not_cross = self.calculate_MRS() > opponent.calculate_MRS()
-        
-        if (both_better) & (mrs_not_cross):
-            self.sell_currencyB(opponent, currencyA_exchange, currencyB_exchange)
-            return True
-        else:
-            return False
-    
-    
-    def trade(self, opponent):
-        '''
-        Function to see if a trade is beneficial
-        '''
-        
-        assert self.currencyA >= 0
-        assert self.currencyB >= 0
-        assert opponent.currencyA >= 0
-        assert opponent.currencyB >= 0
-        
-        if ((self.currencyA == 0) | (self.currencyB == 0)) | ((opponent.currencyA == 0) | (opponent.currencyB == 0)):
-            return False
-        
-        # calculate MRS
-        mrs_self = self.calculate_MRS()
-        mrs_opponent = opponent.calculate_MRS()
-        
-        # calculate utility
-        utility_self = self.calculate_utility(self.currencyA, self.currencyB)
-        utility_opponent = opponent.calculate_utility(opponent.currencyA, opponent.currencyB)
-        
-        # do not trade if MRS are similar
-        if math.isclose(mrs_self, mrs_opponent):
-            return
-        
-        # calculate price 
-        price = np.sqrt(mrs_self*mrs_opponent)
-        
-        # TO DO: need to think about why the prices are extreme
-        if (math.isinf(price)) | (math.isclose(price,0)):
-            return
-    
-        if mrs_self > mrs_opponent:
-            # self want to buy currency A and sell currency B
-            sold = self.maybe_sell_currencyB(opponent, price, utility_self, utility_opponent)
-            # if criteria not met
-            if not sold:
-                return
-        else:
-            # self want to sell currency A and buy currency B
-            sold = opponent.maybe_sell_currencyB(self, price, utility_opponent, utility_self)
-            if not sold:
-                return
-        
-        # store trades
-        self.traded_prices.append(price)
-        self.traded_partners.append(opponent.unique_id)
-        
-        self.trade(opponent)
-    
-    
-    def trade_with_neighbors(self):
-        '''
-        Function for trading with other agents
-        '''
-        neighbors = [self.get_corporates(pos) for pos in self.model.grid.get_neighborhood(self.pos, self.moore, True, self.vision) if self.is_occupied(pos)]
-        
-        if len(neighbors) == 0:
-            return [], []
-        
-        for opponent in neighbors:
-            if opponent:
-                self.trade(opponent)
-        return
-    
+            self.trade_direction = None
+            self.amount = None
+            self.price = None
