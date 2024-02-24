@@ -32,19 +32,19 @@ def random_central_bank(agent_id, central_bank_type, static_map, model):
     '''
     x = int(np.random.uniform(0, static_map.width))
     y = int(np.random.uniform(0, static_map.height))
-    interest_rate = np.random.uniform(0.00, 0.03)
-    inflation_rate = np.random.uniform(0.01, 0.08)
+    inflation_rate = np.random.uniform(0.01, 0.05)
+    interest_rate = 0.0025
+    growth_rate = interest_rate - inflation_rate 
     target_inflation_rate = 0.02
 
     agent_central_bank = central_bank_type.agent(agent_id, 
                                                  model, 
                                                  (x,y), 
-                                                 moore=False, 
-                                                 interest_rate=interest_rate, 
-                                                 inflation_rate=inflation_rate, 
-                                                 target_inflation_rate=target_inflation_rate)
-
-    # print("Created Agent Type:", type(agent_central_bank))
+                                                 moore = False, 
+                                                 interest_rate = interest_rate, 
+                                                 inflation_rate = inflation_rate, 
+                                                 growth_rate = growth_rate,
+                                                 target_inflation_rate = target_inflation_rate)
 
     return agent_central_bank
 

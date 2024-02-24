@@ -56,6 +56,10 @@ class abmodel(mesa.Model):
                     model_reporters[f'({agent_type.name})'] = lambda m: len(m.schedule.agents_by_type[self.all_agents.central_banks[0].agent])      
                     model_reporters[f'interest_rate'] = lambda m: tuple([agent.interest_rate for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])                                                       
                     model_reporters[f'inflation_rate'] = lambda m: tuple([agent.inflation_rate for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])
+                    model_reporters[f'growth_rate'] = lambda m: tuple([agent.growth_rate for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])                                                       
+                    model_reporters[f'target_interest_rate'] = lambda m: tuple([agent.target_interest_rate for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])                                                       
+                    model_reporters[f'target_inflation_rate'] = lambda m: tuple([agent.target_inflation_rate for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])
+
                     
                 if (agent_type.name == 'Local Bank') | (agent_type.name == 'International Bank'):
                     
@@ -115,7 +119,6 @@ class abmodel(mesa.Model):
         self.corporate_details = self.corporate_class(self)
         self.bank_details = self.bank_class(self)
         self.international_bank_details = self.international_bank_class(self)
-        
         
     def geometric_mean(self, listoflist):
         '''
