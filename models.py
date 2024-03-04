@@ -261,16 +261,20 @@ class abmodel(mesa.Model):
             self.agent_currencyA[step] = [a.currencyA for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_currencyB[step] = [a.currencyB for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_quote[step] = [(a.trade_direction, a.price, a.amount) for a in model.schedule.agents_by_type[self.agent_type].values()]
-
             
         def update_trades(self, model, step):
             '''
             Update the corporate trades of each step
-            '''
+            ''' 
+            for a in model.schedule.agents_by_type[self.agent_type].values():
+                if len(a.traded_prices) != 0:
+                    self.agent_type.trade_happened = True
+                else:
+                    self.agent_type.trade_happened = False
+                
             self.agent_traded_price[step] = [a.traded_prices for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_traded_amount[step] = [a.traded_amount for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_traded_with[step] = [a.traded_partners for a in model.schedule.agents_by_type[self.agent_type].values()]
-            
             
         def by_agent(self, agent_id):
             '''

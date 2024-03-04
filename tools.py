@@ -9,21 +9,53 @@ def random_corporate(agent_id, corporate_type, static_map, model):
     '''
     x = int(np.random.uniform(0, static_map.width))
     y = int(np.random.uniform(0, static_map.height))
-    currencyA = int(np.random.uniform(corporate_type.params.asset_min, corporate_type.params.asset_max + 1))
-    currencyB = int(np.random.uniform(corporate_type.params.asset_min, corporate_type.params.asset_max + 1))
-    cost_currencyA = int(np.random.uniform(corporate_type.params.costs_min, corporate_type.params.costs_max + 1))
-    cost_currencyB = int(np.random.uniform(corporate_type.params.costs_min, corporate_type.params.costs_max + 1))
-    vision = int(np.random.uniform(corporate_type.params.vision_min, corporate_type.params.vision_max + 1))
+    country = str(np.random.choice(corporate_type.params.country))
+    level = int(np.random.uniform(corporate_type.params.level_min, corporate_type.params.level_max + 1))
+    vision = level
+
+    if country == 'A':
+        amount_A = int(np.random.uniform(corporate_type.params.asset_min, corporate_type.params.asset_max + 1))
+        currencyA = int(amount_A * level)
+
+        amount_B = int(np.random.uniform(corporate_type.params.asset_min, corporate_type.params.asset_max + 1))
+        currencyB = int(amount_B * 0.75 * level)
+
+        cost_currencyA = int(np.random.uniform(corporate_type.params.costs_min, 2.5))
+        cost_currencyB = int(np.random.uniform(2.5, corporate_type.params.costs_max + 1))
+
+    elif country == "B":
+        amount_A = int(np.random.uniform(corporate_type.params.asset_min, corporate_type.params.asset_max + 1))
+        currencyA = int(amount_A *  0.75 * level)
+
+        amount_B = int(np.random.uniform(corporate_type.params.asset_min, corporate_type.params.asset_max + 1))
+        currencyB = int(amount_B * level)
+
+        cost_currencyA = int(np.random.uniform(2.5, corporate_type.params.costs_max + 1))
+        cost_currencyB = int(np.random.uniform(corporate_type.params.costs_min, 2.5))
+
+    if level == 1:
+        imp_utility = np.arange(1.04, 1.14, 0.01)
+    elif level == 2:
+        imp_utility = np.arange(1.04, 1.11, 0.01)
+    elif level == 3:
+        imp_utility = np.arange(1.03, 1.09, 0.01)
+    elif level == 4:
+        imp_utility = np.arange(1.03, 1.07, 0.01)
+    elif level == 5:
+        imp_utility = np.arange(1.02, 1.05, 0.01)
     
     return corporate_type.agent(agent_id,
                            model,
                            (x,y), 
                            moore = False,
+                           country = country,
                            currencyA = currencyA,
                            currencyB = currencyB,
                            cost_currencyA = cost_currencyA,
                            cost_currencyB = cost_currencyB,
-                           vision = vision)
+                           level = level,
+                           vision = vision,
+                           imp_utility = imp_utility)
 
 
 def random_central_bank(agent_id, central_bank_type, static_map, model):

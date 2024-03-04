@@ -61,12 +61,13 @@ class params_corporate_v0():
     '''
     def __init__(self):
         self.init_population = 300
-        self.asset_min = 25
-        self.asset_max = 50
+        self.country = ["A", "B"]
+        self.asset_min = 75
+        self.asset_max = 100
         self.costs_min = 1
         self.costs_max = 5
-        self.vision_min = 1
-        self.vision_max = 1
+        self.level_min = 1
+        self.level_max = 5
         
 class params_central_bank_v0():
     '''

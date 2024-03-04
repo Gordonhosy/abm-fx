@@ -14,25 +14,26 @@ class agent_corporate_v0(mesa.Agent):
     - Bankrupt if cannot pay the cost
     '''
     
-    def __init__(self, agent_id, model, pos, moore, currencyA, currencyB, cost_currencyA, cost_currencyB, vision):
+    def __init__(self, agent_id, model, pos, moore, country, currencyA, currencyB, cost_currencyA, cost_currencyB, level, vision, imp_utility):
         super().__init__(agent_id, model)
         self.pos = pos
         self.moore = moore
+        self.country = country
         self.currencyA = currencyA
         self.currencyB = currencyB
         self.cost_currencyA = cost_currencyA
         self.cost_currencyB = cost_currencyB
+        self.level = level
         self.vision = vision
+        self.trade_happened = False
         self.traded_prices = []
         self.traded_partners = []
         self.traded_amount = []
         self.trade_direction = None
         self.amount = None
         self.price = None
-        self.improve_utility = 1.05 
-        
-        
-
+        self.utilities = imp_utility
+        self.improve_utility = np.random.choice(self.utilities)
     
     def is_occupied(self, pos):
         '''
@@ -99,7 +100,7 @@ class agent_corporate_v0(mesa.Agent):
         # 3. Find the best cell to move to
         options = [neighbors_available[i] for i in np.argwhere(utilities == np.amax(utilities)).flatten()]
         #print('####################')
-        #print(self.currencyA, self.currencyB, self.cost_currencyA, self.cost_currencyB) 
+        # print(self.currencyA, self.currencyB, self.cost_currencyA, self.cost_currencyB) 
         #print(neighbors_available)
         #print(utilities)
         #print(options)
@@ -147,7 +148,16 @@ class agent_corporate_v0(mesa.Agent):
         Function for corporates to put orders to trade FX
         The aim is to improve the utility by a certain amount
         '''
-        target_utility = self.calculate_utility(self.currencyA, self.currencyB)*self.improve_utility
+        if self.trade_happened == True:
+            if self.improve_utility < max(self.utilities):
+                uti = self.improve_utility + 0.01
+        else:
+            if self.improve_utility > min(self.utilities):
+                uti = self.improve_utility - 0.01
+
+        uti = round(self.improve_utility, 2)
+
+        target_utility = self.calculate_utility(self.currencyA, self.currencyB) * uti
         # target the equilibrium at the new utility
         cost_total = self.cost_currencyA + self.cost_currencyB
         target_currencyA = ((self.cost_currencyB/self.cost_currencyA)*(target_utility**(-cost_total/self.cost_currencyB)))**(-1/(1+(self.cost_currencyA/self.cost_currencyB)))
