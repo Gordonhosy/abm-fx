@@ -113,3 +113,28 @@ def random_bank(agent_id, bank_type, init_pos, model):
                            cost_currencyA = cost_currencyA,
                            cost_currencyB = cost_currencyB,
                            vision = vision)
+
+
+def random_arb(agent_id, arb_type, init_pos, model):
+    '''
+    generate arbitragers at fixed positions
+    '''
+    x = init_pos[0]
+    y = init_pos[1]
+
+    currencyA = int(np.random.uniform(arb_type.params.asset_min, arb_type.params.asset_max + 1))
+    currencyB = int(np.random.uniform(arb_type.params.asset_min, arb_type.params.asset_max + 1))
+    cost_currencyA = int(np.random.uniform(arb_type.params.costs_min, arb_type.params.costs_max + 1))
+    cost_currencyB = int(np.random.uniform(arb_type.params.costs_min, arb_type.params.costs_max + 1))
+    
+    vision = int(np.random.uniform(arb_type.params.vision_min, arb_type.params.vision_max + 1))
+    
+    return arb_type.agent(agent_id,
+                           model,
+                           (x,y), 
+                           moore = False,
+                           currencyA = currencyA,
+                           currencyB = currencyB,
+                           cost_currencyA = cost_currencyA,
+                           cost_currencyB = cost_currencyB,
+                           vision = vision)

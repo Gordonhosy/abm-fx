@@ -30,7 +30,10 @@ class agent_bank(mesa.Agent):
         self.hedged_prices = []
         self.hedged_banks = []
         self.hedged_amount = []
-        self.premium = 0.05
+        self.arbed_prices = []
+        self.arbed_desks = []
+        self.arbed_amount = []
+        self.premium = 0.2
         self.bid_book = [] # list of tuples (price, volume)
         self.ask_book = []
 
@@ -63,7 +66,6 @@ class agent_bank(mesa.Agent):
         contents = self.model.grid.get_cell_list_contents(pos)
         for obj in contents:
             
-            ##### Need to amend the agent corporate later ##### 
             if isinstance(obj, agent_bank):
                 return True
         return False    
@@ -95,7 +97,6 @@ class agent_bank(mesa.Agent):
         '''
         contents = self.model.grid.get_cell_list_contents(pos)
         for obj in contents:
-            ##### need to add international banks #####
             if isinstance(obj, agent_bank):
                 return obj
         return None
@@ -240,7 +241,7 @@ class agent_bank(mesa.Agent):
         '''
         Function to trade with other banks
         '''
-        self.bid_book, self.ask_book = self.calc_bid_ask()
+        self.update_bid_ask()
                 
         neighbor_corporates = [self.get_corporates(pos) for pos in self.model.grid.get_neighborhood(self.pos, self.moore, True, self.vision) if self.is_occupied_corporates(pos)]
         
@@ -253,7 +254,7 @@ class agent_bank(mesa.Agent):
                     return
                 else:
                     self.trade_LOB(opponent)
-                    self.bid_book, self.ask_book = self.calc_bid_ask()
+                    self.update_bid_ask()
         return
     
     
@@ -400,7 +401,7 @@ class agent_bank(mesa.Agent):
         # calculate the combination of currency A and B that gives the same utility
         cost_total = self.cost_currencyA + self.cost_currencyB
         utility = self.currencyA**(self.cost_currencyA/cost_total) * (self.currencyB**(self.cost_currencyB/cost_total))
-        indiff_currencyA = np.arange(int(self.currencyA*0.5), int(self.currencyA*1.5))
+        indiff_currencyA = np.arange(int(self.currencyA*0.8), int(self.currencyA*1.2))
         indiff_currencyB = (utility/(indiff_currencyA**(self.cost_currencyA/cost_total)))**(cost_total/self.cost_currencyB)
         
         # add premium for banks to earn
@@ -435,6 +436,15 @@ class agent_bank(mesa.Agent):
                     ask_book_dict[price] = 1
         
         return list(bid_book_dict.items()), list(ask_book_dict.items())
+    
+    
+    def update_bid_ask(self):
+        '''
+        Update the bid ask based on the current inventory
+        '''
+        self.bid_book, self.ask_book = self.calc_bid_ask()
+        
+        
     
 # International bank agent inherited from bank agent
 class agent_international_bank(agent_bank):

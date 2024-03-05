@@ -2,6 +2,7 @@ import numpy as np
 from corporates import *
 from central_bank import *
 from banks import *
+from arbitragers import *
 
 # This class to the agent input to the model
 class all_agents():
@@ -13,6 +14,7 @@ class all_agents():
         self.corporates = [corporate_v0()]
         self.central_banks = [central_bank_v0()]
         self.banks = [local_bank(), international_bank()]
+        self.arbitragers = [arbitrager()]
         # TO DO: include different types of agents here
 
         
@@ -52,6 +54,15 @@ class international_bank():
         self.name = 'International Bank'
         self.params = params_international_bank()
         self.agent = agent_international_bank
+
+class arbitrager():
+    '''
+    To specify arbitragers
+    '''
+    def __init__(self):
+        self.name = 'Arbitrager'
+        self.params = params_arbitrager()
+        self.agent = agent_arbitrager
         
 
 # This section is to set the hyperparameters of each type of agent
@@ -107,6 +118,19 @@ class params_international_bank():
         self.foreign_asset_max = 2000
         self.foreign_costs_min = 12
         self.foreign_costs_max = 20
+        self.vision_min = 50
+        self.vision_max = 50
+        
+class params_arbitrager():
+    '''
+    parameters for a arbitrager
+    '''
+    def __init__(self):
+        self.init_pos = [(25, 15), (25,35)]
+        self.asset_min = 75
+        self.asset_max = 100
+        self.costs_min = 1
+        self.costs_max = 2
         self.vision_min = 50
         self.vision_max = 50
 

@@ -98,12 +98,9 @@ class agent_corporate_v0(mesa.Agent):
                         self.currencyB + self.get_currency_amount(pos, currencyB_basic)) for pos in neighbors_available]
 
         # 3. Find the best cell to move to
-        options = [neighbors_available[i] for i in np.argwhere(utilities == np.amax(utilities)).flatten()]
-        #print('####################')
-        # print(self.currencyA, self.currencyB, self.cost_currencyA, self.cost_currencyB) 
-        #print(neighbors_available)
-        #print(utilities)
-        #print(options)
+        ##### the options is sometimes NULL #####
+        options = [neighbors_available[i] for i in np.argwhere(utilities == np.amax(utilities)).flatten()] 
+
         random.shuffle(options)
         final_decision = options[0] # random choice if more than one max
         
