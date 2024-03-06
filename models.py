@@ -8,6 +8,7 @@ from resources import *
 from static import *
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 
@@ -77,6 +78,12 @@ class abmodel(mesa.Model):
                     model_reporters[f'({agent_type.name})'] = lambda m: len(m.schedule.agents_by_type[agent_arbitrager])
                     model_reporters[f'Trade Volume ({agent_type.name})'] = lambda m: sum(len(a.traded_banks) for a in m.schedule.agents_by_type[agent_arbitrager].values())
                     model_reporters[f'Price ({agent_type.name})'] = lambda m: self.geometric_mean(a.traded_prices for a in m.schedule.agents_by_type[agent_arbitrager].values())
+                    
+                if agent_type.name == 'Speculator':
+                    
+                    model_reporters[f'({agent_type.name})'] = lambda m: len(m.schedule.agents_by_type[agent_speculator])
+                    model_reporters[f'Trade Volume ({agent_type.name})'] = lambda m: sum(len(a.traded_partners) for a in m.schedule.agents_by_type[agent_speculator].values())
+                    model_reporters[f'Price ({agent_type.name})'] = lambda m: self.geometric_mean(a.traded_prices for a in m.schedule.agents_by_type[agent_speculator].values())
 
         self.datacollector = mesa.DataCollector(model_reporters = model_reporters, agent_reporters = agent_reporters)
 
@@ -129,12 +136,19 @@ class abmodel(mesa.Model):
                 self.schedule.add(agent_rand_arb)
                 agent_id += 1
                 
-        # TO DO: init hedge funds
+        # init speculators
+        for speculator_type in self.all_agents.speculators:
+            for idx, init_pos in enumerate(speculator_type.params.init_pos):
+                agent_rand_fund = tools.random_fund(agent_id, speculator_type, init_pos, speculator_type.params.strategies[idx], self)
+                self.grid.place_agent(agent_rand_fund, agent_rand_fund.pos)
+                self.schedule.add(agent_rand_fund)
+                agent_id += 1        
         
         self.corporate_details = self.corporate_class(self)
         self.bank_details = self.bank_class(self)
         self.international_bank_details = self.international_bank_class(self)
         self.arbitrager_details = self.arbitrager_class(self)
+        self.speculator_details = self.speculator_class(self)
         
     def geometric_mean(self, listoflist):
         '''
@@ -186,14 +200,20 @@ class abmodel(mesa.Model):
                 corporate.pay_costs()
                 corporate.if_bankrupt()
                 corporate.put_order()
-            
+        
+        # hedege funds
+        for speculator_type in self.all_agents.speculators:
+            speculator_shuffle = self.randomise_agents(speculator_type.agent)
+            for speculator in speculator_shuffle:
+                speculator.traded_prices = []
+                speculator.traded_partners = []
+                speculator.traded_amount = []
+                speculator.put_order(self)
+                
         self.corporate_details.update_ex_trades(self, self.schedule.steps + 1)
+        self.speculator_details.update_ex_trades(self, self.schedule.steps + 1)
             
-            #corporates_shuffle = self.randomise_agents(corporate_type.agent)
-            #for corporate in corporates_shuffle:
-            #    corporate.trade_with_neighbors()
-            
-        # local banks
+        # banks
         for bank_type in self.all_agents.banks:
             banks_shuffle = self.randomise_agents(bank_type.agent)
             for bank in banks_shuffle:
@@ -232,14 +252,13 @@ class abmodel(mesa.Model):
         self.bank_details.update(self, self.schedule.steps + 1)
         self.international_bank_details.update(self, self.schedule.steps + 1)
         self.arbitrager_details.update(self, self.schedule.steps + 1)
+        self.speculator_details.update_trades(self, self.schedule.steps + 1)
         
         # central banks
         for central_bank_type in self.all_agents.central_banks:
             central_banks_shuffle = self.randomise_agents(central_bank_type.agent)
             for central_bank in central_banks_shuffle:
                 central_bank.step()
-
-        # TO DO: model how hedge funds behave
 
         self.schedule.steps += 1
         self._steps += 1
@@ -253,7 +272,7 @@ class abmodel(mesa.Model):
         for _ in range(steps):
             self.step()
         
-    # need to think of how to generalise this        
+    ##### need to think of how to generalise this, or maybe just dont record this #####
     def get_trade_partners(self, agent):
         '''
         ### THIS IS ONLY FOR CORPORATE V0 ###
@@ -292,8 +311,6 @@ class abmodel(mesa.Model):
             '''
             self.agent_id[step] = [a.unique_id for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_pos[step] = [a.pos for a in model.schedule.agents_by_type[self.agent_type].values()]
-            self.agent_currencyA[step] = [a.currencyA for a in model.schedule.agents_by_type[self.agent_type].values()]
-            self.agent_currencyB[step] = [a.currencyB for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_quote[step] = [(a.trade_direction, a.price, a.amount) for a in model.schedule.agents_by_type[self.agent_type].values()]
             
         def update_trades(self, model, step):
@@ -305,7 +322,9 @@ class abmodel(mesa.Model):
                     self.agent_type.trade_happened = True
                 else:
                     self.agent_type.trade_happened = False
-                
+                    
+            self.agent_currencyA[step] = [a.currencyA for a in model.schedule.agents_by_type[self.agent_type].values()]
+            self.agent_currencyB[step] = [a.currencyB for a in model.schedule.agents_by_type[self.agent_type].values()]                
             self.agent_traded_price[step] = [a.traded_prices for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_traded_amount[step] = [a.traded_amount for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_traded_with[step] = [a.traded_partners for a in model.schedule.agents_by_type[self.agent_type].values()]
@@ -527,6 +546,56 @@ class abmodel(mesa.Model):
             plt.close()
             return fig
         
+        def flatten(self, l):
+            '''
+            Return flatten list
+            '''
+            return [xs for x in l for xs in x]
+        
+        def bid_ask_prices(self):
+            '''
+            Return the vwap price of bid and ask for banks
+            '''
+            buy_vwap = [] # bid (since the bank is passive, so only buy at bids)
+            sell_vwap = [] # ask
+            
+            for step in self.agent_id.keys():
+                traded_price = self.flatten(self.agent_traded_price[step])
+                traded_amount = self.flatten(self.agent_traded_amount[step])
+                hedged_price = self.flatten(self.agent_hedged_price[step])
+                hedged_amount = self.flatten(self.agent_hedged_amount[step])
+                arbed_price = self.flatten(self.agent_arbed_price[step])
+                arbed_amount = self.flatten(self.agent_arbed_amount[step])
+                
+                ##### is without hedging price more accurate? #####
+                
+                prices = np.array(traded_price + hedged_price + arbed_price)
+                amounts = np.array(traded_amount + hedged_amount + arbed_amount)
+                
+                buy_prices = np.where(amounts > 0, prices, 0)
+                sell_prices = np.where(amounts < 0, prices, 0)
+                buy_amounts = np.where(amounts > 0, amounts, 0)
+                sell_amounts = np.where(amounts < 0, amounts, 0)
+                
+                buy_vwap.append(np.dot(buy_prices, buy_amounts)/sum(buy_amounts))
+                sell_vwap.append(np.dot(sell_prices, sell_amounts)/sum(sell_amounts))
+                
+            return buy_vwap, sell_vwap
+                
+        
+        def price_plot(self):
+            '''
+            Plots the vwap bid ask time series
+            '''
+            buy_vwap, sell_vwap = self.bid_ask_prices()
+                
+            fig = plt.figure()
+            plt.plot(buy_vwap, color = 'darkblue', alpha = 0.3, label = 'Bid')
+            plt.plot(sell_vwap, color = 'darkred', alpha = 0.4, label = 'Ask')
+            plt.legend()
+            plt.close()
+            return fig
+        
         
     class international_bank_class(bank_class):
         def __init__(self, model):
@@ -622,6 +691,112 @@ class abmodel(mesa.Model):
                         'Traded Price': self.agent_traded_price[step],
                         'Traded Amount': self.agent_traded_amount[step],
                         'Traded with': self.agent_traded_with[step],
+                       })
+        
+        def all_ids(self):
+            '''
+            Return all agent ids
+            '''
+            return self.agent_id[0]
+        
+        
+    class speculator_class():
+        '''
+        Speculator class to return information of:
+        1. all speculators of a certain time step
+        2. all time steps of one speculator
+        '''
+        def __init__(self, model):
+            self.agent_type = agent_speculator
+            self.agent_id = {}
+            self.agent_pos = {}
+            self.agent_currencyA = {}
+            self.agent_currencyB = {}
+            self.agent_quote = {}
+            self.agent_traded_price = {}
+            self.agent_traded_amount = {}
+            self.agent_traded_with = {}
+            step = 0
+            self.update_ex_trades(model, step)
+            self.update_trades(model, step)
+    
+            
+        def update_ex_trades(self, model, step):
+            '''
+            Update the speculator details of each step before trades (because of the quote)
+            '''
+            self.agent_id[step] = [a.unique_id for a in model.schedule.agents_by_type[self.agent_type].values()]
+            self.agent_pos[step] = [a.pos for a in model.schedule.agents_by_type[self.agent_type].values()]
+            self.agent_quote[step] = [(a.trade_direction, a.price, a.amount) for a in model.schedule.agents_by_type[self.agent_type].values()]
+            
+        def update_trades(self, model, step):
+            '''
+            Update the speculator trades of each step
+            ''' 
+            for a in model.schedule.agents_by_type[self.agent_type].values():
+                if len(a.traded_prices) != 0:
+                    self.agent_type.trade_happened = True
+                else:
+                    self.agent_type.trade_happened = False
+
+            self.agent_currencyA[step] = [a.currencyA for a in model.schedule.agents_by_type[self.agent_type].values()]
+            self.agent_currencyB[step] = [a.currencyB for a in model.schedule.agents_by_type[self.agent_type].values()]                    
+            self.agent_traded_price[step] = [a.traded_prices for a in model.schedule.agents_by_type[self.agent_type].values()]
+            self.agent_traded_amount[step] = [a.traded_amount for a in model.schedule.agents_by_type[self.agent_type].values()]
+            self.agent_traded_with[step] = [a.traded_partners for a in model.schedule.agents_by_type[self.agent_type].values()]
+            
+        def by_agent(self, agent_id):
+            '''
+            Return time series of a speculator's value, trades and position
+            '''
+            steps_ts = []
+            pos_ts = []
+            currencyA_ts = []
+            currencyB_ts = []
+            quote_ts = []
+            price_ts = []
+            amount_ts = []
+            with_ts = []
+            
+            for step, agent_ids in self.agent_id.items():
+                if agent_id in agent_ids:
+                    idx = agent_ids.index(agent_id)
+                    steps_ts.append(step)
+                    pos_ts.append(self.agent_pos[step][idx])
+                    currencyA_ts.append(self.agent_currencyA[step][idx])
+                    currencyB_ts.append(self.agent_currencyB[step][idx])
+                    quote_ts.append(self.agent_quote[step][idx])
+                    price_ts.append(self.agent_traded_price[step][idx])
+                    amount_ts.append(self.agent_traded_amount[step][idx])
+                    with_ts.append(self.agent_traded_with[step][idx])
+                else:
+                    break
+                    
+            return pd.DataFrame({
+                        'Step': steps_ts,
+                        'Position': pos_ts,
+                        'Currency A': currencyA_ts,
+                        'Currency B': currencyB_ts,
+                        'Quotes': quote_ts,
+                        'Traded Price': price_ts,
+                        'Traded Amount': amount_ts,
+                        'Traded with': with_ts
+                       })
+  
+            
+        def by_step(self, step):
+            '''
+            Return the snapshot of all corporates of a certain timestep
+            '''
+            return pd.DataFrame({
+                        'Agent ID': self.agent_id[step],
+                        'Position': self.agent_pos[step],
+                        'Currency A': self.agent_currencyA[step],
+                        'Currency B': self.agent_currencyB[step],
+                        'Quotes': self.agent_quote[step],
+                        'Traded Price': self.agent_traded_price[step],
+                        'Traded Amount': self.agent_traded_amount[step],
+                        'Traded with': self.agent_traded_with[step]
                        })
         
         def all_ids(self):

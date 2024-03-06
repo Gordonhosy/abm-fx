@@ -4,6 +4,7 @@ import numpy as np
 import random
 import math
 from corporates import *
+from speculators import *
 
 class agent_bank(mesa.Agent):
     '''
@@ -12,6 +13,7 @@ class agent_bank(mesa.Agent):
     - The utility of a bank is determined by the Cobb-Douglas utility function
     - The local bank quotes a LOB based on its utility
     - Trade with corporates if corporates ask for price on the LOB
+    - At the same time trade with speculators if they quote a price to trade
     - Hedge remaining risk with other banks
     '''
     
@@ -40,7 +42,7 @@ class agent_bank(mesa.Agent):
     
     def is_occupied_corporates(self, pos):
         '''
-        Function to check if a cell is occupied by a corporates
+        Function to check if a cell is occupied by a corporate
         '''
         if pos == self.pos:
             return False
@@ -51,6 +53,20 @@ class agent_bank(mesa.Agent):
             
             ##### Need to amend the agent corporate later ##### 
             if isinstance(obj, agent_corporate_v0):
+                return True
+        return False
+    
+    def is_occupied_speculators(self, pos):
+        '''
+        Function to check if a cell is occupied by a speculator
+        '''
+        if pos == self.pos:
+            return False
+        
+        # check if this cell includes something that is mutually exclusive
+        contents = self.model.grid.get_cell_list_contents(pos)
+        for obj in contents:
+            if isinstance(obj, agent_speculator):
                 return True
         return False
     
@@ -89,7 +105,18 @@ class agent_bank(mesa.Agent):
             if isinstance(obj, agent_corporate_v0):
                 return obj
         return None
-        
+    
+
+    def get_speculators(self, pos):
+        '''
+        Return the speculator agent of the postition if any
+        '''
+        contents = self.model.grid.get_cell_list_contents(pos)
+        for obj in contents:
+            if isinstance(obj, agent_speculator):
+                return obj
+        return None
+
         
     def get_banks(self, pos):
         '''
@@ -104,7 +131,7 @@ class agent_bank(mesa.Agent):
         
     def pay_costs(self):
         '''
-        Function for corporate to pay money each step
+        Function for banks to pay money each step
         '''
         self.currencyA -= self.cost_currencyA
         self.currencyB -= self.cost_currencyB
@@ -171,7 +198,7 @@ class agent_bank(mesa.Agent):
         '''
         Function to see if a trade is beneficial
         '''
-        
+
         assert self.currencyA >= 0
         assert self.currencyB >= 0
         assert opponent.currencyA >= 0
@@ -244,13 +271,18 @@ class agent_bank(mesa.Agent):
         self.update_bid_ask()
                 
         neighbor_corporates = [self.get_corporates(pos) for pos in self.model.grid.get_neighborhood(self.pos, self.moore, True, self.vision) if self.is_occupied_corporates(pos)]
+        neighbor_speculators = [self.get_speculators(pos) for pos in self.model.grid.get_neighborhood(self.pos, self.moore, True, self.vision) if self.is_occupied_speculators(pos)]
         
-        if len(neighbor_corporates) == 0:
+        neighbors = neighbor_corporates + neighbor_speculators
+        
+        if len(neighbors) == 0:
             return [], []
         
-        for opponent in neighbor_corporates:
+        random.shuffle(neighbors)
+        
+        for opponent in neighbors:
             if opponent:
-                if opponent.amount is None: # the corporate does not want to trade
+                if (opponent.amount is None) | ((opponent.price is None) | (opponent.trade_direction is None)): # the corporate/speculator does not want to trade
                     return
                 else:
                     self.trade_LOB(opponent)
@@ -339,9 +371,9 @@ class agent_bank(mesa.Agent):
         
         self.traded_prices.append(opponent.price)
         self.traded_corps.append(opponent.unique_id)
-        self.traded_amount.append(-opponent.amount)
+        self.traded_amount.append(-amount)
         
-        opponent.traded_amount.append(opponent.amount)
+        opponent.traded_amount.append(amount)
         opponent.traded_prices.append(opponent.price)
         opponent.traded_partners.append(self.unique_id)
         opponent.amount -= amount
@@ -361,9 +393,9 @@ class agent_bank(mesa.Agent):
         
         self.traded_prices.append(opponent.price)
         self.traded_corps.append(opponent.unique_id)
-        self.traded_amount.append(opponent.amount)
+        self.traded_amount.append(amount)
         
-        opponent.traded_amount.append(-opponent.amount)
+        opponent.traded_amount.append(-amount)
         opponent.traded_prices.append(opponent.price)
         opponent.traded_partners.append(self.unique_id)
         opponent.amount -= amount
@@ -380,17 +412,27 @@ class agent_bank(mesa.Agent):
         vwap = 0
         amount = 0
         if side == 'ask':
-            book = self.ask_book
+            book = self.ask_book # ascending
+            for idx, price_volume in enumerate(book):
+                vwap += price_volume[0] * price_volume[1]
+                amount += price_volume[1]
+                if vwap/amount > price:
+                    vwap -= price_volume[0]*price_volume[1]
+                    amount -= price_volume[1]
+                    break
+            return amount
+    
         elif side == 'bid':
-            book = self.bid_book
-        for idx, price_volume in enumerate(book):
-            vwap += price_volume[0]*price_volume[1]
-            amount += price_volume[1]
-            if vwap/amount > price:
-                vwap -= price_volume[0]*price_volume[1]
-                amount -= price_volume[1]
-                break
-        return amount
+            book = self.bid_book # descending
+            for idx, price_volume in enumerate(book):
+                vwap += price_volume[0] * price_volume[1]
+                amount += price_volume[1]
+                if vwap/amount < price:
+                    vwap -= price_volume[0]*price_volume[1]
+                    amount -= price_volume[1]
+                    break
+            return amount
+
     
     
     def calc_bid_ask(self):

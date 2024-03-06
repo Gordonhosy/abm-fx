@@ -3,6 +3,7 @@ from corporates import *
 from central_bank import *
 from banks import *
 from arbitragers import *
+from speculators import *
 
 # This class to the agent input to the model
 class all_agents():
@@ -15,6 +16,7 @@ class all_agents():
         self.central_banks = [central_bank_v0()]
         self.banks = [local_bank(), international_bank()]
         self.arbitragers = [arbitrager()]
+        self.speculators = [speculator()]
         # TO DO: include different types of agents here
 
         
@@ -63,6 +65,15 @@ class arbitrager():
         self.name = 'Arbitrager'
         self.params = params_arbitrager()
         self.agent = agent_arbitrager
+
+class speculator():
+    '''
+    To specify speculators
+    '''
+    def __init__(self):
+        self.name = 'Speculator'
+        self.params = params_speculator()
+        self.agent = agent_speculator
         
 
 # This section is to set the hyperparameters of each type of agent
@@ -93,14 +104,14 @@ class params_local_bank():
     '''
     def __init__(self):
         self.init_pos = [(10,10), (20,10), (30,10), (40,10), (10,40), (20,40), (30,40), (40,40)]
-        self.local_asset_min = 250
-        self.local_asset_max = 500
-        self.local_costs_min = 4
-        self.local_costs_max = 7
-        self.foreign_asset_min = 125
-        self.foreign_asset_max = 250
-        self.foreign_costs_min = 3
-        self.foreign_costs_max = 5
+        self.local_asset_min = 2500
+        self.local_asset_max = 5000
+        self.local_costs_min = 40
+        self.local_costs_max = 70
+        self.foreign_asset_min = 1250
+        self.foreign_asset_max = 2500
+        self.foreign_costs_min = 30
+        self.foreign_costs_max = 50
         self.vision_min = 20
         self.vision_max = 20
         
@@ -109,7 +120,7 @@ class params_international_bank():
     parameters for an international bank
     '''
     def __init__(self):
-        self.init_pos = [(25, 15), (25,35)]
+        self.init_pos = [(25,15), (25,35)]
         self.local_asset_min = 2000
         self.local_asset_max = 4000
         self.local_costs_min = 24
@@ -126,13 +137,25 @@ class params_arbitrager():
     parameters for a arbitrager
     '''
     def __init__(self):
-        self.init_pos = [(25, 15), (25,35)]
+        self.init_pos = [(24,15), (24,35)]
         self.asset_min = 75
         self.asset_max = 100
         self.costs_min = 1
         self.costs_max = 2
         self.vision_min = 50
         self.vision_max = 50
+        
+class params_speculator():
+    '''
+    parameters for a speculator
+    '''
+    def __init__(self):
+        self.init_pos = [(26,15), (26,35)]
+        self.strategies = ['sample', 'sample']
+        self.asset_min = 75
+        self.asset_max = 100
+        self.costs_min = 1
+        self.costs_max = 1
 
 
 # This section is to store maps in form of arrays      

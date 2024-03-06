@@ -29,7 +29,7 @@ class agent_corporate_v0(mesa.Agent):
         self.traded_prices = []
         self.traded_partners = []
         self.traded_amount = []
-        self.trade_direction = None
+        self.trade_direction = None # 'long' or 'short'
         self.amount = None
         self.price = None
         self.utilities = imp_utility
@@ -98,9 +98,7 @@ class agent_corporate_v0(mesa.Agent):
                         self.currencyB + self.get_currency_amount(pos, currencyB_basic)) for pos in neighbors_available]
 
         # 3. Find the best cell to move to
-        ##### the options is sometimes NULL #####
         options = [neighbors_available[i] for i in np.argwhere(utilities == np.amax(utilities)).flatten()] 
-
         random.shuffle(options)
         final_decision = options[0] # random choice if more than one max
         
@@ -167,12 +165,12 @@ class agent_corporate_v0(mesa.Agent):
         if (change_currencyA * change_currencyB < 0) & (not math.isclose(change_currencyA, 0)):
             if change_currencyA < 0:
                 self.trade_direction = 'short'
-                self.amount = -change_currencyA
-                self.price =  -round(change_currencyB/change_currencyA, 4)
+                self.amount = -round(change_currencyA)
+                self.price =  -round(change_currencyB/change_currencyA, 2)
             else:
                 self.trade_direction = 'long'
-                self.amount = change_currencyA
-                self.price = -round(change_currencyB/change_currencyA, 4)
+                self.amount = round(change_currencyA)
+                self.price = -round(change_currencyB/change_currencyA, 2)
         else:
             self.trade_direction = None
             self.amount = None
