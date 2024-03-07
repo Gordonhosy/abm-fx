@@ -111,22 +111,34 @@ class abmodel(mesa.Model):
                 self.schedule.add(agent_corporate)
                 agent_id += 1
         
-        # init central bank
+        # init central bank (Two Central Bank)
         for central_bank_type in self.all_agents.central_banks:
-            for _ in range(central_bank_type.params.number_of_central_bank):
+            for j in range(central_bank_type.params.number_of_central_bank):
 
-                agent_central_bank = tools.random_central_bank(agent_id, central_bank_type, self.static_map, self)
-                self.grid.place_agent(agent_central_bank, agent_central_bank.pos)
-                self.schedule.add(agent_central_bank)
-                agent_id += 1
+                if j == 0:
+                    agent_central_bank = tools.central_bank_A(agent_id, central_bank_type, self.static_map, self)
+                    self.grid.place_agent(agent_central_bank, agent_central_bank.pos)
+                    self.schedule.add(agent_central_bank)
+                    agent_id += 1
+
+                else:
+                    agent_central_bank = tools.central_bank_B(agent_id, central_bank_type, self.static_map, self)
+                    self.grid.place_agent(agent_central_bank, agent_central_bank.pos)
+                    self.schedule.add(agent_central_bank)
+                    agent_id += 1
+
         
         # init local banks
         for bank_type in self.all_agents.banks:
             for init_pos in bank_type.params.init_pos:
-                agent_rand_bank = tools.random_bank(agent_id, bank_type, init_pos, self)
-                self.grid.place_agent(agent_rand_bank, agent_rand_bank.pos)
-                self.schedule.add(agent_rand_bank)
-                agent_id += 1
+                try:
+                    agent_rand_bank = tools.random_bank(agent_id, bank_type, init_pos, self)
+                    self.grid.place_agent(agent_rand_bank, agent_rand_bank.pos)
+                    self.schedule.add(agent_rand_bank)
+                    agent_id += 1
+                except:
+                    print("Fail Position: ", init_pos)
+
                 
         # init arbitragers
         for arb_type in self.all_agents.arbitragers:

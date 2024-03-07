@@ -16,13 +16,14 @@ class agent_central_bank_v0(mesa.Agent):
     - target inflation rate (2% or 3%)
     """ 
 
-    def __init__(self, unique_id, model, pos, moore, interest_rate, inflation_rate, growth_rate, target_inflation_rate):
+    def __init__(self, unique_id, model, pos, moore, interest_rate, inflation_rate, growth_rate, target_inflation_rate, country):
         # Pass the parameters to the parent class.
         super().__init__(unique_id, model)
 
         self.pos = pos
         self.moore = moore
         self.adjust_rate_unit = 0.0025 
+        self.country = country
         # Create the agent's attribute and set the initial values.
 
         # Real World Observation
@@ -32,7 +33,13 @@ class agent_central_bank_v0(mesa.Agent):
 
         # Central Bank Target
         self.target_inflation_rate = target_inflation_rate # initial inflation target rate 
-        self.target_growth_rate = target_inflation_rate + 0.02 # initial target growth rate (Long term GDP Growth)
+
+        # initial target growth rate (Long term GDP Growth)
+        if self.country == "A":
+            self.target_growth_rate = target_inflation_rate + 0.01
+        
+        if self.country == "B":
+            self.target_growth_rate = target_inflation_rate 
 
     def step(self):
         """
@@ -48,6 +55,7 @@ class agent_central_bank_v0(mesa.Agent):
 
         self.economic_cycle() # macroeconomic policy is tightening/easing.
         self.calculate_growth_rate() # calculate period end growth rate with inflation rate and interest rate.
+        self.interest_rate_difference_effect()
         
 
     def calculate_target_interest_rate(self):
@@ -59,7 +67,7 @@ class agent_central_bank_v0(mesa.Agent):
         - Where growth rate approximates the observed GDP growth and we assume long-run economic growth rate equal to the target inflation rate plus 2%.
         """
 
-        self.target_interest_rate =  self.inflation_rate + 0.02 + 0.5 * (self.inflation_rate - self.target_inflation_rate) + 0.5 * (self.growth_rate - self.target_growth_rate)
+        self.target_interest_rate =  self.target_growth_rate + 0.5 * (self.inflation_rate - self.target_inflation_rate) + 0.5 * (self.growth_rate - self.target_growth_rate)
 
         # we assume there's no negative target rate
         if self.target_interest_rate < 0:
@@ -76,8 +84,7 @@ class agent_central_bank_v0(mesa.Agent):
 
         # When inflation rate within 0~3%, we assume central bank do nothing.
         if  0.005 <= self.inflation_rate <= 0.035:
-            self.inflation_rate_converge(smoothing_param = 0.5)
-
+            self.inflation_rate_converge()
         
         # when economic is pretty bad(deflation occur, recession), than fed will cut rate dramatically.
         elif self.inflation_rate <= 0:
@@ -85,14 +92,14 @@ class agent_central_bank_v0(mesa.Agent):
             number = 0
             while self.interest_rate - self.adjust_rate_unit >= 0:
                 self.interest_rate = self.interest_rate - self.adjust_rate_unit
-                self.inflation_rate_converge(smoothing_param = 0.5)
+                self.inflation_rate_converge()
                 number += 1
 
                 if number == 15:
                     break
             
             # make sure no negative rate
-            if self.interest_rate < 0:
+            if (self.interest_rate < 0) and (self.country == "A"):
                 self.interest_rate = 0
         
         else: # Normal Monetary Policy.
@@ -101,7 +108,7 @@ class agent_central_bank_v0(mesa.Agent):
             while self.target_interest_rate - self.interest_rate >= self.adjust_rate_unit:
 
                 self.interest_rate  = self.interest_rate + self.adjust_rate_unit
-                self.inflation_rate_converge(smoothing_param = 0.5)
+                self.inflation_rate_converge()
                 times += 1
 
                 if times == 3:
@@ -111,11 +118,11 @@ class agent_central_bank_v0(mesa.Agent):
             while (self.interest_rate - self.target_interest_rate  >= self.adjust_rate_unit) and (self.interest_rate > self.adjust_rate_unit):
 
                 self.interest_rate = self.interest_rate - self.adjust_rate_unit 
-                self.inflation_rate_converge(smoothing_param = 0.5)
+                self.inflation_rate_converge()
                 times += 1
 
                 # make sure no negative rate
-                if self.interest_rate < 0:
+                if (self.interest_rate < 0) and (self.country == "A"):
                     self.interest_rate = 0
 
                 if times == 3:
@@ -134,7 +141,12 @@ class agent_central_bank_v0(mesa.Agent):
             --> output gap become positive
             --> target interest rate increase
             """
-            self.growth_rate = self.target_growth_rate + 0.01 * np.random.normal(1, 1)
+
+            if self.country == "A":
+                self.growth_rate = self.target_growth_rate + 0.01 * np.random.normal(1, 1)
+            
+            elif self.country == "B":
+                self.growth_rate = self.target_growth_rate + 0.01 * np.random.normal(0.5, 1)
 
         elif self.target_interest_rate < self.interest_rate:
             """
@@ -143,7 +155,11 @@ class agent_central_bank_v0(mesa.Agent):
             --> output gap become negative 
             --> target interest rate drop
             """
-            self.growth_rate = self.target_growth_rate + 0.01 * np.random.normal(-1, 1)
+
+            if self.country == "A":
+                self.growth_rate = self.target_growth_rate + 0.01 * np.random.normal(-1, 1)
+            elif self.country == "B":
+                self.growth_rate = self.target_growth_rate  + 0.01 * np.random.normal(-0.5, 1)
         
         elif self.target_interest_rate == self.interest_rate:
             """
@@ -159,26 +175,63 @@ class agent_central_bank_v0(mesa.Agent):
         - If monetary policy is teasing then it means current inflation is too low --> negative economic shock
         """
 
-        if self.target_interest_rate > self.interest_rate:
 
-            self.inflation_rate = self.inflation_rate + np.random.normal(1,1) * 0.01
-      
-        elif self.target_interest_rate < self.interest_rate:
+        if self.country == "A":
 
-            self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.01
+            if self.target_interest_rate > self.interest_rate:
+
+                self.inflation_rate = self.inflation_rate + np.random.normal(0.5,1) * 0.01
         
+            elif self.target_interest_rate < self.interest_rate:
 
-    def inflation_rate_converge(self, smoothing_param):
+                self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.01
+            
+        elif self.country == "B":
+
+            if self.target_interest_rate > self.interest_rate:
+
+                self.inflation_rate = self.inflation_rate + np.random.normal(0,1) * 0.01
+        
+            elif self.target_interest_rate < self.interest_rate:
+
+                self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.01
+            
+
+
+    def inflation_rate_converge(self):
         """
         Helper function for calculating the converge of the inflation rate
         - In Tyler's rule model, we assume the observation inflation rate will converge to the target inflation rate.
         """
-        self.inflation_rate = (1 - smoothing_param) * self.target_inflation_rate + smoothing_param * self.inflation_rate + np.random.normal(0,1) * 0.0001
+
+        if self.country == "A":
+            smoothing_param = 0.4
+            self.inflation_rate = (1 - smoothing_param) * self.target_inflation_rate + smoothing_param * self.inflation_rate + np.random.normal(0,1) * 0.0001
+
+        if self.country == "B":
+            smoothing_param = 0.2
+            self.inflation_rate = (1 - smoothing_param) * self.target_inflation_rate + smoothing_param * self.inflation_rate + np.random.normal(0,1) * 0.0001
 
 
+
+    def interest_rate_difference_effect(self):
+
+
+        central_bank_agents = [agent for agent in self.model.schedule.agents if isinstance(agent, agent_central_bank_v0)]      
+
+        other_agent = self.random.choice(central_bank_agents)
+
+        if self.interest_rate < other_agent.interest_rate:
+
+            self.growth_rate = self.growth_rate + 0.01 * np.random.normal(1, 1)
+            self.inflation_rate = self.inflation_rate + 0.01 * np.random.normal(1, 1)
+
+        if self.interest_rate > other_agent.interest_rate:
+
+            self.growth_rate = self.growth_rate - 0.01 * np.random.normal(1, 1)
+            self.inflation_rate = self.inflation_rate - 0.01 * np.random.normal(1, 1)
         
         
-
         
 
 
