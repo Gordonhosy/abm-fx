@@ -10,6 +10,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
 class abmodel(mesa.Model):
@@ -530,7 +532,7 @@ class abmodel(mesa.Model):
             '''
             return self.agent_id[0]
         
-        def lob(self, step):
+        def lob(self, step, agent):
             '''
             Return the limit order book of the interbank market of a certain time step
             '''
@@ -550,12 +552,36 @@ class abmodel(mesa.Model):
                     else:
                         interbank_ask[ask[0]] = ask[1]
             
-            # plot
-            fig = plt.figure()
-            plt.bar(interbank_bid.keys(), interbank_bid.values(), color = 'darkblue', alpha = 0.3, width=0.01, label = 'Bid')
-            plt.bar(interbank_ask.keys(), interbank_ask.values(), color = 'darkred', alpha = 0.4, width=0.01, label = 'Ask')
-            plt.legend()
-            plt.close()
+
+            # ----- Plotly Version ------
+            fig = make_subplots(rows=1, cols=1)
+            temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
+            bid_price = go.Bar(x = list(interbank_bid.keys()), y = list(interbank_bid.values()), name = 'Bid', marker = dict(color = 'darkblue'))
+            ask_price = go.Bar(x = list(interbank_ask.keys()), y = list(interbank_ask.values()), name = 'Ask', marker = dict(color = 'darkred'))
+
+            fig.add_trace(bid_price, row = 1, col = 1)
+            fig.add_trace(ask_price, row = 1, col = 1)
+
+            fig.update_layout(title_text = 'Limit Order Book of Interbank Market - ' + str(agent), showlegend=True)
+
+            fig.update_layout(template = temp,
+                            hovermode = 'closest',
+                            margin = dict(l = 30, r = 20, t = 50, b = 20),
+                            height = 400, 
+                            width = 600, 
+                            showlegend = True,
+                            xaxis = dict(tickfont=dict(size=10)),
+                            yaxis = dict(side = "left", tickfont = dict(size=10)),
+                            xaxis_showgrid = False, 
+                            legend = dict(yanchor = "bottom", y = 0.9, xanchor = "left", x = 0.01,  orientation="h"))
+    
+            # ----- Matplotlib Version ------
+            # fig = plt.figure()
+            # plt.bar(interbank_bid.keys(), interbank_bid.values(), color = 'darkblue', alpha = 0.3, width=0.01, label = 'Bid')
+            # plt.bar(interbank_ask.keys(), interbank_ask.values(), color = 'darkred', alpha = 0.4, width=0.01, label = 'Ask')
+            # plt.legend()
+            # plt.close()
+                        
             return fig
         
         def flatten(self, l):
@@ -601,11 +627,32 @@ class abmodel(mesa.Model):
             '''
             buy_vwap, sell_vwap = self.bid_ask_prices()
                 
-            fig = plt.figure()
-            plt.plot(buy_vwap, color = 'darkblue', alpha = 0.3, label = 'Bid')
-            plt.plot(sell_vwap, color = 'darkred', alpha = 0.4, label = 'Ask')
-            plt.legend()
-            plt.close()
+            fig = make_subplots(rows=1, cols=1)
+            temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
+            bid_price = go.Scatter(y = buy_vwap, name = 'bid price', line = dict(color = 'darkblue'))
+            ask_price = go.Scatter(y = sell_vwap, name = 'ask price', line = dict(color = 'darkred'))
+
+            fig.add_trace(bid_price)
+            fig.add_trace(ask_price)
+
+            fig.update_layout(title_text = 'VWAP Bid/Ask', showlegend=True)
+            fig.update_layout(template = temp,
+                            hovermode = 'closest',
+                            margin = dict(l = 30, r = 20, t = 50, b = 20),
+                            height = 400, 
+                            width = 600, 
+                            showlegend = True,
+                            xaxis = dict(tickfont=dict(size=10)),
+                            yaxis = dict(side = "left", tickfont = dict(size=10)),
+                            xaxis_showgrid = False, 
+                            legend = dict(yanchor = "bottom", y = 0.9, xanchor = "left", x = 0.01,  orientation="h"))
+            
+            # -------- Matplotlib Version -------- 
+            # fig = plt.figure()
+            # plt.plot(buy_vwap, color = 'darkblue', alpha = 0.3, label = 'Bid')
+            # plt.plot(sell_vwap, color = 'darkred', alpha = 0.4, label = 'Ask')
+            # plt.legend()
+            # plt.close()
             return fig
         
         

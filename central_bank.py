@@ -7,7 +7,7 @@ class agent_central_bank_v0(mesa.Agent):
     """
     Central Bank Agent, very unrealistic one. \\
     Central Bank:
-    - Aims to stabilise inflation to a target level and smooth economic growth.
+    - Aims to stabilize inflation to a target level and smooth economic growth.
     - the current idea is trying to mimic an economic cycle to see how this affects the FX sport rate. \\
     
     Parameters:
@@ -143,10 +143,10 @@ class agent_central_bank_v0(mesa.Agent):
             """
 
             if self.country == "A":
-                self.growth_rate = self.target_growth_rate + 0.01 * np.random.normal(1, 1)
+                self.growth_rate = self.target_growth_rate + 0.005 * np.random.normal(1, 1)
             
             elif self.country == "B":
-                self.growth_rate = self.target_growth_rate + 0.01 * np.random.normal(0.5, 1)
+                self.growth_rate = self.target_growth_rate + 0.005 * np.random.normal(0.5, 1)
 
         elif self.target_interest_rate < self.interest_rate:
             """
@@ -157,16 +157,16 @@ class agent_central_bank_v0(mesa.Agent):
             """
 
             if self.country == "A":
-                self.growth_rate = self.target_growth_rate + 0.01 * np.random.normal(-1, 1)
+                self.growth_rate = self.target_growth_rate + 0.005 * np.random.normal(-1, 1)
             elif self.country == "B":
-                self.growth_rate = self.target_growth_rate  + 0.01 * np.random.normal(-0.5, 1)
+                self.growth_rate = self.target_growth_rate  + 0.005 * np.random.normal(-0.5, 1)
         
         elif self.target_interest_rate == self.interest_rate:
             """
             Neutral monetary policy 
             --> central bank achieve target growth rate.
             """
-            self.growth_rate = self.target_growth_rate + 0.01 * np.random.normal(0, 1)
+            self.growth_rate = self.target_growth_rate + 0.005 * np.random.normal(0, 1)
 
     def economic_cycle(self):
         """
@@ -180,21 +180,21 @@ class agent_central_bank_v0(mesa.Agent):
 
             if self.target_interest_rate > self.interest_rate:
 
-                self.inflation_rate = self.inflation_rate + np.random.normal(0.5,1) * 0.01
+                self.inflation_rate = self.inflation_rate + np.random.normal(0.5,1) * 0.005
         
             elif self.target_interest_rate < self.interest_rate:
 
-                self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.01
+                self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.005
             
         elif self.country == "B":
 
             if self.target_interest_rate > self.interest_rate:
 
-                self.inflation_rate = self.inflation_rate + np.random.normal(0,1) * 0.01
+                self.inflation_rate = self.inflation_rate + np.random.normal(0,1) * 0.005
         
             elif self.target_interest_rate < self.interest_rate:
 
-                self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.01
+                self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.005
             
 
 
@@ -205,11 +205,11 @@ class agent_central_bank_v0(mesa.Agent):
         """
 
         if self.country == "A":
-            smoothing_param = 0.4
+            smoothing_param = 0.5
             self.inflation_rate = (1 - smoothing_param) * self.target_inflation_rate + smoothing_param * self.inflation_rate + np.random.normal(0,1) * 0.0001
 
         if self.country == "B":
-            smoothing_param = 0.2
+            smoothing_param = 0.8
             self.inflation_rate = (1 - smoothing_param) * self.target_inflation_rate + smoothing_param * self.inflation_rate + np.random.normal(0,1) * 0.0001
 
 
@@ -218,18 +218,17 @@ class agent_central_bank_v0(mesa.Agent):
 
 
         central_bank_agents = [agent for agent in self.model.schedule.agents if isinstance(agent, agent_central_bank_v0)]      
-
         other_agent = self.random.choice(central_bank_agents)
 
         if self.interest_rate < other_agent.interest_rate:
 
-            self.growth_rate = self.growth_rate + 0.01 * np.random.normal(1, 1)
-            self.inflation_rate = self.inflation_rate + 0.01 * np.random.normal(1, 1)
+            self.growth_rate = self.growth_rate + 0.005 * np.random.normal(1, 1)
+            self.inflation_rate = self.inflation_rate + 0.005 * np.random.normal(1, 1)
 
         if self.interest_rate > other_agent.interest_rate:
 
-            self.growth_rate = self.growth_rate - 0.01 * np.random.normal(1, 1)
-            self.inflation_rate = self.inflation_rate - 0.01 * np.random.normal(1, 1)
+            self.growth_rate = self.growth_rate - 0.005 * np.random.normal(1, 1)
+            self.inflation_rate = self.inflation_rate - 0.005 * np.random.normal(1, 1)
         
         
         
