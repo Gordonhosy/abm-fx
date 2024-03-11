@@ -168,8 +168,8 @@ class static_map_v0():
     '''
     def __init__(self):
 
-        us_map = pd.read_excel(r"/Users/chen-lichiang/Desktop/KCL Term 2/ABM_FX/geographic_data/MAP.xlsx", sheet_name = "US_MAP").values
-        jp_map = pd.read_excel(r"/Users/chen-lichiang/Desktop/KCL Term 2/ABM_FX/geographic_data/MAP.xlsx", sheet_name = "JP_MAP").values
+        us_map = pd.read_excel(r"../ABM_FX/geographic_data/MAP.xlsx", sheet_name = "US_MAP").values
+        jp_map = pd.read_excel(r"../ABM_FX/geographic_data/MAP.xlsx", sheet_name = "JP_MAP").values
 
         self.width = us_map.shape[0]
         self.height = us_map.shape[1]
