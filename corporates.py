@@ -175,3 +175,10 @@ class agent_corporate_v0(mesa.Agent):
             self.trade_direction = None
             self.amount = None
             self.price = None
+
+        
+    def update_currency_cost(self, interest_rate_a, interest_rate_b):
+
+        self.cost_currencyA = self.cost_currencyA * (1 + interest_rate_a)
+        self.cost_currencyB = self.cost_currencyB * (1 + interest_rate_b)
+        

@@ -189,13 +189,16 @@ class abmodel(mesa.Model):
         prompt agents what to do in each step
         '''
         
+        growth_rate = [agent.growth_rate for agent in self.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)]
+        interest_rate = [agent.interest_rate for agent in self.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)]
+
         # currency A
         for agent_currencyA in self.schedule.agents_by_type[currencyA_basic].values():
-            agent_currencyA.step()
+            agent_currencyA.step(growth_rate = growth_rate[0])
         
         # currency B
         for agent_currencyB in self.schedule.agents_by_type[currencyB_basic].values():
-            agent_currencyB.step()
+            agent_currencyB.step(growth_rate = growth_rate[1])
             
         # corporates
         # randomise move, earn money and trade sequence to make sure not one is advantaged
@@ -206,6 +209,7 @@ class abmodel(mesa.Model):
                 corporate.traded_partners = []
                 corporate.traded_amount = []
                 corporate.move()
+                corporate.update_currency_cost(interest_rate_a = interest_rate[0], interest_rate_b =  interest_rate[1]) # update currency cost based on interest rate
 
 
             corporates_shuffle = self.randomise_agents(corporate_type.agent)
