@@ -12,8 +12,19 @@ def random_corporate(agent_id, corporate_type, static_map, model):
     '''
     generate random corporates at random postitions
     '''
-    x = int(np.random.uniform(0, static_map.width))
-    y = int(np.random.uniform(0, static_map.height))
+    # x = int(np.random.uniform(0, static_map.width))
+    # y = int(np.random.uniform(0, static_map.height))
+
+    map_a = static_map.currencyA_map_init
+    map_b = static_map.currencyB_map_init
+    world_map = map_a + map_b
+
+    non_zero_index = np.nonzero(world_map)
+    shuffle_index_len = len(non_zero_index[0])
+    random_pos_index = np.random.randint(0, shuffle_index_len, size=1)
+
+    x = int(non_zero_index[0][random_pos_index])
+    y = int(non_zero_index[1][random_pos_index])
 
 
     country = str(np.random.choice(corporate_type.params.country))
