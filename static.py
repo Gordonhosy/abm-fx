@@ -104,7 +104,8 @@ class params_local_bank():
     '''
     def __init__(self):
 
-        self.init_pos = [(16,4), (15,7), (15,11), (7,13), (13, 23), (3, 23), (10, 72), (11, 70)]
+        self.init_pos = [(13,3), (3,3), (10,51), (23,44),  # US Bank 
+                         (16, 67), (15, 71), (15, 67), (7,73)] # JP Bank
         self.local_asset_min = 250
         self.local_asset_max = 500
         self.local_costs_min = 40
