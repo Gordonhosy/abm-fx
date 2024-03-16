@@ -24,6 +24,7 @@ class agent_central_bank_v0(mesa.Agent):
         self.moore = moore
         self.adjust_rate_unit = 0.0025 
         self.country = country
+        self.update_duration = 0
         # Create the agent's attribute and set the initial values.
 
         # Real World Observation
@@ -57,7 +58,6 @@ class agent_central_bank_v0(mesa.Agent):
         self.calculate_growth_rate() # calculate period end growth rate with inflation rate and interest rate.
         self.interest_rate_difference_effect()
         
-
     def calculate_target_interest_rate(self):
         """
         Taylor's Rule Model:
@@ -82,51 +82,56 @@ class agent_central_bank_v0(mesa.Agent):
         - If the central bank raises/cuts the interest rate the smoothing parameter for conversion of inflation function is equal to 0.5, otherwise equal to 0.2.
         """
 
-        # When inflation rate within 0~3%, we assume central bank do nothing.
-        if  0.005 <= self.inflation_rate <= 0.035:
-            self.inflation_rate_converge()
-        
-        # when economic is pretty bad(deflation occur, recession), than fed will cut rate dramatically.
-        elif self.inflation_rate <= 0:
+        if self.update_duration >= 30:
+            self.update_duration = 0
+    
+            # when economic is pretty bad(deflation occur, recession), than fed will cut rate dramatically.
+            if self.inflation_rate <= 0:
 
-            number = 0
-            while self.interest_rate - self.adjust_rate_unit >= 0:
-                self.interest_rate = self.interest_rate - self.adjust_rate_unit
-                self.inflation_rate_converge()
-                number += 1
+                number = 0
+                while self.interest_rate - self.adjust_rate_unit >= 0:
+                    self.interest_rate = self.interest_rate - self.adjust_rate_unit
+                    self.inflation_rate_converge()
+                    number += 1
 
-                if number == 15:
-                    break
-            
-            # make sure no negative rate
-            if (self.interest_rate < 0) and (self.country == "A"):
-                self.interest_rate = 0
-        
-        else: # Normal Monetary Policy.
-            times = 0
-            # target interest rate > interest rate -> raise rate
-            while self.target_interest_rate - self.interest_rate >= self.adjust_rate_unit:
-
-                self.interest_rate  = self.interest_rate + self.adjust_rate_unit
-                self.inflation_rate_converge()
-                times += 1
-
-                if times == 3:
-                    break
-
-            # target interest rate < interest rate -> cut rate
-            while (self.interest_rate - self.target_interest_rate  >= self.adjust_rate_unit) and (self.interest_rate > self.adjust_rate_unit):
-
-                self.interest_rate = self.interest_rate - self.adjust_rate_unit 
-                self.inflation_rate_converge()
-                times += 1
-
+                    if number == 15:
+                        break
+                
                 # make sure no negative rate
                 if (self.interest_rate < 0) and (self.country == "A"):
                     self.interest_rate = 0
 
-                if times == 3:
-                    break
+            
+            else: # Normal Monetary Policy.
+                times = 0
+                # target interest rate > interest rate -> raise rate
+                while self.target_interest_rate - self.interest_rate >= self.adjust_rate_unit:
+
+                    self.interest_rate  = self.interest_rate + self.adjust_rate_unit
+                    self.inflation_rate_converge()
+                    times += 1
+
+                    if times == 3:
+                        break
+
+                # target interest rate < interest rate -> cut rate
+                while (self.interest_rate - self.target_interest_rate >= self.adjust_rate_unit) and (self.interest_rate > self.adjust_rate_unit):
+
+                    self.interest_rate = self.interest_rate - self.adjust_rate_unit 
+                    self.inflation_rate_converge()
+                    times += 1
+
+                    # make sure no negative rate
+                    if (self.interest_rate < 0) and (self.country == "A"):
+                        self.interest_rate = 0
+
+                    if times == 3:
+                        break
+        
+        else:
+            self.inflation_rate_converge()
+            self.update_duration += 1
+        
 
     def calculate_growth_rate(self):
         """
@@ -184,7 +189,7 @@ class agent_central_bank_v0(mesa.Agent):
         
             elif self.target_interest_rate < self.interest_rate:
 
-                self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.005
+                self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.0025
             
         elif self.country == "B":
 
@@ -194,10 +199,8 @@ class agent_central_bank_v0(mesa.Agent):
         
             elif self.target_interest_rate < self.interest_rate:
 
-                self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.005
+                self.inflation_rate = self.inflation_rate + np.random.normal(-1,1) * 0.0025
             
-
-
     def inflation_rate_converge(self):
         """
         Helper function for calculating the converge of the inflation rate
@@ -212,10 +215,7 @@ class agent_central_bank_v0(mesa.Agent):
             smoothing_param = 0.8
             self.inflation_rate = (1 - smoothing_param) * self.target_inflation_rate + smoothing_param * self.inflation_rate + np.random.normal(0,1) * 0.0001
 
-
-
     def interest_rate_difference_effect(self):
-
 
         central_bank_agents = [agent for agent in self.model.schedule.agents if isinstance(agent, agent_central_bank_v0)]      
         other_agent = self.random.choice(central_bank_agents)
