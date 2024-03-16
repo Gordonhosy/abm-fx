@@ -129,7 +129,6 @@ class abmodel(mesa.Model):
                     self.schedule.add(agent_central_bank)
                     agent_id += 1
 
-        
         # init local banks
         for bank_type in self.all_agents.banks:
             for init_pos in bank_type.params.init_pos:
@@ -140,8 +139,7 @@ class abmodel(mesa.Model):
                     agent_id += 1
                 except:
                     print("Fail Position: ", init_pos)
-
-                
+    
         # init arbitragers
         for arb_type in self.all_agents.arbitragers:
             for init_pos in arb_type.params.init_pos:
@@ -188,7 +186,6 @@ class abmodel(mesa.Model):
         '''
         prompt agents what to do in each step
         '''
-        
         growth_rate = [agent.growth_rate for agent in self.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)]
         interest_rate = [agent.interest_rate for agent in self.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)]
 
@@ -199,6 +196,9 @@ class abmodel(mesa.Model):
         # currency B
         for agent_currencyB in self.schedule.agents_by_type[currencyB_basic].values():
             agent_currencyB.step(growth_rate = growth_rate[1])
+            
+        # if there are too little corporate, new ones will be born
+        self.init_new_corporates()
             
         # corporates
         # randomise move, earn money and trade sequence to make sure not one is advantaged
@@ -267,7 +267,7 @@ class abmodel(mesa.Model):
         self.bank_details.update(self, self.schedule.steps + 1)
         #self.international_bank_details.update(self, self.schedule.steps + 1)
         mid_price = self.bank_details.mid_price(self.schedule.steps + 1)
-        
+
         self.corporate_details.update_trades(self, self.schedule.steps + 1, mid_price)
         self.arbitrager_details.update(self, self.schedule.steps + 1, mid_price)
         self.speculator_details.update_trades(self, self.schedule.steps + 1, mid_price)
@@ -282,19 +282,28 @@ class abmodel(mesa.Model):
         self._steps += 1
         self.datacollector.collect(self)
 
+        
+        
     def init_new_corporates(self):
+        '''
+        To create new corporates when some dies
+        '''
          # After an amount of bankruptcies, new corporates spawn
-        step_count = len(self.corporate_details.agent_pos)
-        number_of_corps = len(self.corporate_details.agent_pos[step_count - 1])
+        number_of_corps = len([a.unique_id for a in self.schedule.agents_by_type[self.all_agents.corporates[0].agent].values()])
 
-        if number_of_corps < 295:
-            print("Number of agents:", number_of_corps)
-            for corporate_type in self.all_agents.corporates:
-                new_agent_id = min(self.corporate_details.all_ids()) - 1
-                print(new_agent_id)
-                agent_corporate = tools.random_corporate(new_agent_id, corporate_type, self.static_map, self)
-                self.grid.place_agent(agent_corporate, agent_corporate.pos)
-                self.schedule.add(agent_corporate)
+        for corporate_type in self.all_agents.corporates:
+            if number_of_corps < corporate_type.params.init_population * 0.95:
+                # assume only one corporate type can respawn now, and speculators are the last agent to be initialised
+                if self.corporate_details.all_ids()[-1] > self.speculator_details.all_ids()[-1]:
+                    new_agent_id = max(self.corporate_details.all_ids()) + 1
+                else:
+                    new_agent_id = max(self.speculator_details.all_ids()) + 1
+
+                for i in range(random.randint(10, int(corporate_type.params.init_population * 0.1))):
+                    agent_corporate = tools.random_corporate(new_agent_id, corporate_type, self.static_map, self)
+                    self.grid.place_agent(agent_corporate, agent_corporate.pos)
+                    self.schedule.add(agent_corporate)
+                    new_agent_id += 1
         
     
     def run_model(self, steps = 1000):
@@ -379,16 +388,19 @@ class abmodel(mesa.Model):
             
             for step, agent_ids in self.agent_id.items():
                 if agent_id in agent_ids:
-                    idx = agent_ids.index(agent_id)
-                    steps_ts.append(step)
-                    pos_ts.append(self.agent_pos[step][idx])
-                    currencyA_ts.append(self.agent_currencyA[step][idx])
-                    currencyB_ts.append(self.agent_currencyB[step][idx])
-                    quote_ts.append(self.agent_quote[step][idx])
-                    price_ts.append(self.agent_traded_price[step][idx])
-                    amount_ts.append(self.agent_traded_amount[step][idx])
-                    with_ts.append(self.agent_traded_with[step][idx])
-                    value_ts.append(self.agent_value[step][idx])
+                    try:
+                        idx = agent_ids.index(agent_id)
+                        value_ts.append(self.agent_value[step][idx])
+                        steps_ts.append(step)
+                        pos_ts.append(self.agent_pos[step][idx])
+                        currencyA_ts.append(self.agent_currencyA[step][idx])
+                        currencyB_ts.append(self.agent_currencyB[step][idx])
+                        quote_ts.append(self.agent_quote[step][idx])
+                        price_ts.append(self.agent_traded_price[step][idx])
+                        amount_ts.append(self.agent_traded_amount[step][idx])
+                        with_ts.append(self.agent_traded_with[step][idx])
+                    except:
+                        pass
                 else:
                     break
                     
@@ -425,7 +437,7 @@ class abmodel(mesa.Model):
             '''
             Return all agent ids
             '''
-            return self.agent_id[0]
+            return list(set([xs for x in self.agent_id.values() for xs in x]))
         
         
     class bank_class():
@@ -564,7 +576,7 @@ class abmodel(mesa.Model):
             '''
             Return all agent ids
             '''
-            return self.agent_id[0]
+            return list(set([xs for x in self.agent_id.values() for xs in x]))
         
         def lob(self, step):
             '''
@@ -645,12 +657,16 @@ class abmodel(mesa.Model):
             interbank_bid, interbank_ask = self.lob(step)
             bid = next(iter(sorted(interbank_bid.keys(), reverse = True)),None)
             ask = next(iter(sorted(interbank_ask.keys())),None)
-            if bid is None:
+            if (bid is None) & (ask is not None):
                 return ask
-            elif ask is None:
+            elif (ask is None) & (bid is not None):
                 return bid
             else:
-                return (bid + ask)/2      
+                # return last mid price if all banks die
+                if (bid is None) & (ask is None):
+                    return self.mid_price(step - 1)
+                else:
+                    return (bid + ask)/2
             
         def top_of_book_plot(self):
             '''
@@ -855,7 +871,7 @@ class abmodel(mesa.Model):
             '''
             Return all agent ids
             '''
-            return self.agent_id[0]
+            return list(set([xs for x in self.agent_id.values() for xs in x]))
         
         
     class speculator_class():
@@ -967,7 +983,7 @@ class abmodel(mesa.Model):
             '''
             Return all agent ids
             '''
-            return self.agent_id[0]
+            return list(set([xs for x in self.agent_id.values() for xs in x]))
 
 # if __name__ == '__main__':
 

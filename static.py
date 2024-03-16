@@ -108,12 +108,12 @@ class params_local_bank():
                          (16, 67), (15, 71), (15, 67), (7,73)] # JP Bank
         self.local_asset_min = 250
         self.local_asset_max = 500
-        self.local_costs_min = 40
-        self.local_costs_max = 70
-        self.foreign_asset_min = 1250
-        self.foreign_asset_max = 2500
-        self.foreign_costs_min = 30
-        self.foreign_costs_max = 50
+        self.local_costs_min = 4
+        self.local_costs_max = 7
+        self.foreign_asset_min = 125
+        self.foreign_asset_max = 250
+        self.foreign_costs_min = 3
+        self.foreign_costs_max = 5
         self.vision_min = 50
         self.vision_max = 50
         

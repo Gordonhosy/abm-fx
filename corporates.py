@@ -99,6 +99,8 @@ class agent_corporate_v0(mesa.Agent):
 
         # 3. Find the best cell to move to
         options = [neighbors_available[i] for i in np.argwhere(utilities == np.amax(utilities)).flatten()] 
+        if len(options) == 0:
+            print(self.unique_id)
         random.shuffle(options)
         final_decision = options[0] # random choice if more than one max
         
@@ -161,16 +163,27 @@ class agent_corporate_v0(mesa.Agent):
         change_currencyA = target_currencyA - self.currencyA
         change_currencyB = target_currencyB - self.currencyB
         
-        # the change need to be in opposite direction for a trade to happen
+        # the changes need to be in opposite directions for a trade to happen
         if (change_currencyA * change_currencyB < 0) & (not math.isclose(change_currencyA, 0)):
+            
             if change_currencyA < 0:
                 self.trade_direction = 'short'
                 self.amount = -round(change_currencyA)
                 self.price =  -round(change_currencyB/change_currencyA, 2)
+                # some quotes are not sensible after rounding
+                if self.currencyA < self.amount:
+                    self.trade_direction = 'short'
+                    self.amount = -int(change_currencyA)
+                    self.price = -round(change_currencyB/change_currencyA, 2)
             else:
                 self.trade_direction = 'long'
                 self.amount = round(change_currencyA)
                 self.price = -round(change_currencyB/change_currencyA, 2)
+                # some quotes are not sensible after rounding
+                if self.currencyB < self.amount * self.price:
+                    self.trade_direction = 'long'
+                    self.amount = int(change_currencyA)
+                    self.price = -round(change_currencyB/change_currencyA, 2)
         else:
             self.trade_direction = None
             self.amount = None

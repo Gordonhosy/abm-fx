@@ -119,27 +119,36 @@ class agent_arbitrager(mesa.Agent):
         
     def do_arb(self, capacity, bid_book_bank, ask_book_bank):
         '''
-        Return what to be arbitraged
+        Execute the arbitrage
         '''
         ask_from_low = sorted(list(ask_book_bank.keys()))
         bid_from_high = sorted(list(bid_book_bank.keys()), reverse = True)
         
-        while ((ask_from_low[0] < bid_from_high[0]) & (capacity > 0)):
+        # when all surroundings banks die
+        if (len(ask_from_low) == 0) | (len(bid_from_high) == 0):
+            return
+        
+        while ((next(iter(ask_from_low)) < next(iter(bid_from_high))) & (capacity > 0)):
             ask_amount = sum([pair[0] for pair in ask_book_bank[ask_from_low[0]]])
             top_bid_amount = sum([pair[0] for pair in bid_book_bank[bid_from_high[0]]])
             
             # cleared the top of ask
-            if ask_amount <= top_bid_amount: 
+            if ask_amount < top_bid_amount: 
                 self.execute_arb_full(ask_from_low[0], ask_book_bank, bid_from_high[0], bid_book_bank, ask_amount)
                 ask_from_low.pop(0)
                 capacity -= ask_amount
                 
             # cleared the top of bid
-            else:
+            elif ask_amount > top_bid_amount:
                 self.execute_arb_part(ask_from_low[0], ask_book_bank, bid_from_high[0], bid_book_bank, top_bid_amount)
                 bid_from_high.pop(0)
                 capacity -= top_bid_amount
-                
+            # cleared both bars
+            else:
+                self.execute_arb_full(ask_from_low[0], ask_book_bank, bid_from_high[0], bid_book_bank, ask_amount)
+                ask_from_low.pop(0)
+                bid_from_high.pop(0)
+                capacity -= ask_amount
                 
     def execute_arb_full(self, ask_price, ask_book_bank, bid_price, bid_book_bank, amount):
         '''
@@ -169,7 +178,7 @@ class agent_arbitrager(mesa.Agent):
         
         for volu_bank in random_volu_bank:
             
-            if volu_bank[0] <= amount:
+            if volu_bank[0] < amount:
                 self.currencyA -= volu_bank[0]
                 self.currencyB += volu_bank[0]*bid_price
                 volu_bank[1].currencyA += volu_bank[0]
@@ -184,8 +193,6 @@ class agent_arbitrager(mesa.Agent):
                 volu_bank[1].arbed_desks.append(self.unique_id)
                 
                 amount -= volu_bank[0]
-                if amount == 0:
-                    break
                 
             else:
                 self.currencyA -= amount
@@ -214,7 +221,7 @@ class agent_arbitrager(mesa.Agent):
         
         for volu_bank in random_volu_bank:
             
-            if volu_bank[0] <= amount:
+            if volu_bank[0] < amount:
                 self.currencyA += volu_bank[0]
                 self.currencyB -= volu_bank[0]*ask_price
                 volu_bank[1].currencyA -= volu_bank[0]
@@ -229,8 +236,6 @@ class agent_arbitrager(mesa.Agent):
                 volu_bank[1].arbed_desks.append(self.unique_id)
                 
                 amount -= volu_bank[0]
-                if amount == 0:
-                    break
                 
             else:
                 self.currencyA += amount

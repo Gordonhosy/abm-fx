@@ -51,7 +51,7 @@ class agent_bank(mesa.Agent):
         contents = self.model.grid.get_cell_list_contents(pos)
         for obj in contents:
             
-            ##### Need to amend the agent corporate later ##### 
+            ##### Need to amend the agent corporate later, if there are more corporate types ##### 
             if isinstance(obj, agent_corporate_v0):
                 return True
         return False
@@ -220,7 +220,6 @@ class agent_bank(mesa.Agent):
         # calculate price 
         price = np.sqrt(mrs_self*mrs_opponent)
         
-        # TO DO: need to think about why the prices are extreme
         if (math.isinf(price)) | (math.isclose(price,0)):
             return
     
@@ -282,7 +281,7 @@ class agent_bank(mesa.Agent):
         
         for opponent in neighbors:
             if opponent:
-                if (opponent.amount is None) | ((opponent.price is None) | (opponent.trade_direction is None)): # the corporate/speculator does not want to trade
+                if (opponent.amount is None) | ((opponent.price is None) | (opponent.trade_direction is None) | (opponent.amount == 0)): # the corporate/speculator does not want to trade
                     return
                 else:
                     self.trade_LOB(opponent)
