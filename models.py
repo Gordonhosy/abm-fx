@@ -158,7 +158,7 @@ class abmodel(mesa.Model):
                 self.schedule.add(agent_rand_fund)
                 agent_id += 1        
         
-        self.corporate_details = self.corporate_class(self)
+        self.corporate_details = self.corporate_class(self) # Issue about new corporates
         self.bank_details = self.bank_class(self)
         #self.international_bank_details = self.international_bank_class(self)
         self.arbitrager_details = self.arbitrager_class(self)
@@ -281,6 +281,20 @@ class abmodel(mesa.Model):
         self.schedule.steps += 1
         self._steps += 1
         self.datacollector.collect(self)
+
+    def init_new_corporates(self):
+         # After an amount of bankruptcies, new corporates spawn
+        step_count = len(self.corporate_details.agent_pos)
+        number_of_corps = len(self.corporate_details.agent_pos[step_count - 1])
+
+        if number_of_corps < 295:
+            print("Number of agents:", number_of_corps)
+            for corporate_type in self.all_agents.corporates:
+                new_agent_id = min(self.corporate_details.all_ids()) - 1
+                print(new_agent_id)
+                agent_corporate = tools.random_corporate(new_agent_id, corporate_type, self.static_map, self)
+                self.grid.place_agent(agent_corporate, agent_corporate.pos)
+                self.schedule.add(agent_corporate)
         
     
     def run_model(self, steps = 1000):
