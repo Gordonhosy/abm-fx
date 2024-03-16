@@ -15,10 +15,9 @@ class all_agents():
 
         self.corporates = [corporate_v0()]
         self.central_banks = [central_bank_v0()]
-        self.banks = [local_bank(), international_bank()]
+        self.banks = [local_bank()]
         self.arbitragers = [arbitrager()]
         self.speculators = [speculator()]
-        # TO DO: include different types of agents here
 
         
 # This section is to specify a complete agent type from: agent type + parameters
@@ -106,16 +105,16 @@ class params_local_bank():
     def __init__(self):
 
         self.init_pos = [(16,4), (15,7), (15,11), (7,13), (13, 23), (3, 23), (10, 72), (11, 70)]
-        self.local_asset_min = 2500
-        self.local_asset_max = 5000
+        self.local_asset_min = 250
+        self.local_asset_max = 500
         self.local_costs_min = 40
         self.local_costs_max = 70
         self.foreign_asset_min = 1250
         self.foreign_asset_max = 2500
         self.foreign_costs_min = 30
         self.foreign_costs_max = 50
-        self.vision_min = 20
-        self.vision_max = 20
+        self.vision_min = 50
+        self.vision_max = 50
         
 class params_international_bank():
     '''
@@ -139,8 +138,8 @@ class params_arbitrager():
     parameters for a arbitrager
     '''
     def __init__(self):
-        self.init_pos = [(24,15), (24,35)]
-        self.asset_min = 75
+        self.init_pos = [(24,15), (24,35), (24, 50), (24, 75)]
+        self.asset_min = 100
         self.asset_max = 100
         self.costs_min = 1
         self.costs_max = 2

@@ -129,12 +129,12 @@ class agent_bank(mesa.Agent):
         return None
         
         
-    def pay_costs(self):
+    def pay_costs(self, interest_rate_a, interest_rate_b):
         '''
         Function for banks to pay money each step
         '''
-        self.currencyA -= self.cost_currencyA
-        self.currencyB -= self.cost_currencyB
+        self.currencyA -= self.cost_currencyA * (1 + interest_rate_a)
+        self.currencyB -= self.cost_currencyB * (1 + interest_rate_b)
      
     
     def if_bankrupt(self):
@@ -264,7 +264,7 @@ class agent_bank(mesa.Agent):
         return
     
 
-    def trade_with_corporates(self):
+    def trade_with_corps_funds(self):
         '''
         Function to trade with other banks
         '''

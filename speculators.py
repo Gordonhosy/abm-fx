@@ -79,4 +79,3 @@ class agent_speculator(mesa.Agent):
                 return None, None, None
             else:
                 return 'short', 10, round(bids[-1], 2)
-        

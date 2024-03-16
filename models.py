@@ -160,7 +160,7 @@ class abmodel(mesa.Model):
         
         self.corporate_details = self.corporate_class(self)
         self.bank_details = self.bank_class(self)
-        self.international_bank_details = self.international_bank_class(self)
+        #self.international_bank_details = self.international_bank_class(self)
         self.arbitrager_details = self.arbitrager_class(self)
         self.speculator_details = self.speculator_class(self)
         
@@ -209,13 +209,11 @@ class abmodel(mesa.Model):
                 corporate.traded_partners = []
                 corporate.traded_amount = []
                 corporate.move()
-                corporate.update_currency_cost(interest_rate_a = interest_rate[0], interest_rate_b =  interest_rate[1]) # update currency cost based on interest rate
-
 
             corporates_shuffle = self.randomise_agents(corporate_type.agent)
             for corporate in corporates_shuffle:
                 corporate.earn_money()
-                corporate.pay_costs()
+                corporate.pay_costs(interest_rate_a = interest_rate[0], interest_rate_b =  interest_rate[1])
                 corporate.if_bankrupt()
                 corporate.put_order()
         
@@ -244,12 +242,12 @@ class abmodel(mesa.Model):
                 bank.arbed_prices = []
                 bank.arbed_desks = []
                 bank.arbed_amount = []
-                bank.trade_with_corporates()
+                bank.trade_with_corps_funds()
             
             banks_shuffle = self.randomise_agents(bank_type.agent)
             for bank in banks_shuffle:
                 bank.hedge_with_banks()
-                bank.pay_costs()
+                bank.pay_costs(interest_rate_a = interest_rate[0], interest_rate_b =  interest_rate[1])
                 bank.if_bankrupt()
         
         # arbitragers
@@ -265,12 +263,14 @@ class abmodel(mesa.Model):
                     for bank in [a for a in self.schedule.agents_by_type[bank_type.agent].values()]:
                         bank.update_bid_ask()
                 
-        
-        self.corporate_details.update_trades(self, self.schedule.steps + 1)
+        # need to update banks first for the new mid price
         self.bank_details.update(self, self.schedule.steps + 1)
-        self.international_bank_details.update(self, self.schedule.steps + 1)
-        self.arbitrager_details.update(self, self.schedule.steps + 1)
-        self.speculator_details.update_trades(self, self.schedule.steps + 1)
+        #self.international_bank_details.update(self, self.schedule.steps + 1)
+        mid_price = self.bank_details.mid_price(self.schedule.steps + 1)
+        
+        self.corporate_details.update_trades(self, self.schedule.steps + 1, mid_price)
+        self.arbitrager_details.update(self, self.schedule.steps + 1, mid_price)
+        self.speculator_details.update_trades(self, self.schedule.steps + 1, mid_price)
         
         # central banks
         for central_bank_type in self.all_agents.central_banks:
@@ -318,9 +318,10 @@ class abmodel(mesa.Model):
             self.agent_traded_price = {}
             self.agent_traded_amount = {}
             self.agent_traded_with = {}
+            self.agent_value = {} # denominated in currency A
             step = 0
             self.update_ex_trades(model, step)
-            self.update_trades(model, step)
+            self.update_trades(model, step, mid_price = 1)
     
             
         def update_ex_trades(self, model, step):
@@ -331,7 +332,7 @@ class abmodel(mesa.Model):
             self.agent_pos[step] = [a.pos for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_quote[step] = [(a.trade_direction, a.price, a.amount) for a in model.schedule.agents_by_type[self.agent_type].values()]
             
-        def update_trades(self, model, step):
+        def update_trades(self, model, step, mid_price):
             '''
             Update the corporate trades of each step
             ''' 
@@ -342,10 +343,11 @@ class abmodel(mesa.Model):
                     self.agent_type.trade_happened = False
                     
             self.agent_currencyA[step] = [a.currencyA for a in model.schedule.agents_by_type[self.agent_type].values()]
-            self.agent_currencyB[step] = [a.currencyB for a in model.schedule.agents_by_type[self.agent_type].values()]                
+            self.agent_currencyB[step] = [a.currencyB for a in model.schedule.agents_by_type[self.agent_type].values()]               
             self.agent_traded_price[step] = [a.traded_prices for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_traded_amount[step] = [a.traded_amount for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_traded_with[step] = [a.traded_partners for a in model.schedule.agents_by_type[self.agent_type].values()]
+            self.agent_value[step] = [a + (b/mid_price) for a, b in zip(self.agent_currencyA[step], self.agent_currencyB[step])]
             
         def by_agent(self, agent_id):
             '''
@@ -359,6 +361,7 @@ class abmodel(mesa.Model):
             price_ts = []
             amount_ts = []
             with_ts = []
+            value_ts = []
             
             for step, agent_ids in self.agent_id.items():
                 if agent_id in agent_ids:
@@ -371,6 +374,7 @@ class abmodel(mesa.Model):
                     price_ts.append(self.agent_traded_price[step][idx])
                     amount_ts.append(self.agent_traded_amount[step][idx])
                     with_ts.append(self.agent_traded_with[step][idx])
+                    value_ts.append(self.agent_value[step][idx])
                 else:
                     break
                     
@@ -382,7 +386,8 @@ class abmodel(mesa.Model):
                         'Quotes': quote_ts,
                         'Traded Price': price_ts,
                         'Traded Amount': amount_ts,
-                        'Traded with': with_ts
+                        'Traded with': with_ts,
+                        'Firm Value': value_ts
                        })
   
             
@@ -398,7 +403,8 @@ class abmodel(mesa.Model):
                         'Quotes': self.agent_quote[step],
                         'Traded Price': self.agent_traded_price[step],
                         'Traded Amount': self.agent_traded_amount[step],
-                        'Traded with': self.agent_traded_with[step]
+                        'Traded with': self.agent_traded_with[step],
+                        'Firm Value': self.agent_value[step]
                        })
         
         def all_ids(self):
@@ -431,6 +437,7 @@ class abmodel(mesa.Model):
             self.agent_arbed_with = {}
             self.agent_bid_book = {}
             self.agent_ask_book = {}
+            self.agent_value = {} # denominated in currency A
             step = 0
             self.update(model, step)
     
@@ -454,6 +461,11 @@ class abmodel(mesa.Model):
             self.agent_arbed_with[step] = [a.arbed_desks for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_bid_book[step] = [a.bid_book for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_ask_book[step] = [a.ask_book for a in model.schedule.agents_by_type[self.agent_type].values()]
+            if step == 0:
+                mid_price = 1
+            else:
+                mid_price = self.mid_price(step)
+            self.agent_value[step] = [a + (b/mid_price) for a, b in zip(self.agent_currencyA[step], self.agent_currencyB[step])]
             
         def by_agent(self, agent_id):
             '''
@@ -472,7 +484,8 @@ class abmodel(mesa.Model):
             hedge_with_ts = []
             arb_price_ts = []
             arb_amount_ts = []
-            arb_with_ts = []            
+            arb_with_ts = []
+            value_ts = []
             
             for step, agent_ids in self.agent_id.items():
                 if agent_id in agent_ids:
@@ -490,6 +503,7 @@ class abmodel(mesa.Model):
                     arb_price_ts.append(self.agent_arbed_price[step][idx])
                     arb_amount_ts.append(self.agent_arbed_amount[step][idx])
                     arb_with_ts.append(self.agent_arbed_with[step][idx])
+                    value_ts.append(self.agent_value[step][idx])
                 else:
                     break
                     
@@ -506,7 +520,8 @@ class abmodel(mesa.Model):
                         'Hedged with': hedge_with_ts,
                         'Arbed Price': arb_price_ts,
                         'Arbed Amount': arb_amount_ts,
-                        'Arbed with': arb_with_ts
+                        'Arbed with': arb_with_ts,
+                        'Firm Value': value_ts
                        })
   
             
@@ -527,7 +542,8 @@ class abmodel(mesa.Model):
                         'Hedged with': self.agent_hedged_with[step],
                         'Arbed Price': self.agent_arbed_price[step],
                         'Arbed Amount': self.agent_arbed_amount[step],
-                        'Arbed with': self.agent_arbed_with[step]                
+                        'Arbed with': self.agent_arbed_with[step],
+                        'Firm Value': self.agent_value[step]
                        })
         
         def all_ids(self):
@@ -536,7 +552,7 @@ class abmodel(mesa.Model):
             '''
             return self.agent_id[0]
         
-        def lob(self, step, agent):
+        def lob(self, step):
             '''
             Return the limit order book of the interbank market of a certain time step
             '''
@@ -556,6 +572,14 @@ class abmodel(mesa.Model):
                     else:
                         interbank_ask[ask[0]] = ask[1]
             
+            return interbank_bid, interbank_ask
+        
+                        
+        def lob_plot(self, step):
+            '''
+            Return a plot of the limit order book
+            '''
+            interbank_bid, interbank_ask = self.lob(step)
 
             # ----- Plotly Version ------
             fig = make_subplots(rows=1, cols=1)
@@ -566,7 +590,7 @@ class abmodel(mesa.Model):
             fig.add_trace(bid_price, row = 1, col = 1)
             fig.add_trace(ask_price, row = 1, col = 1)
 
-            fig.update_layout(title_text = 'Limit Order Book of Interbank Market - ' + str(agent), showlegend=True)
+            fig.update_layout(title_text = 'Limit Order Book of Interbank Market', showlegend=True)
 
             fig.update_layout(template = temp,
                             hovermode = 'closest',
@@ -588,6 +612,59 @@ class abmodel(mesa.Model):
                         
             return fig
         
+        def top_of_book(self):
+            '''
+            Return the time series of top bid and ask
+            '''
+            top_bids = []
+            top_asks = []
+            for step in self.agent_id.keys():
+                interbank_bid, interbank_ask = self.lob(step)
+                top_bids.append(next(iter(sorted(interbank_bid.keys(), reverse = True)),None))
+                top_asks.append(next(iter(sorted(interbank_ask.keys())),None))
+            return top_bids, top_asks
+        
+        def mid_price(self, step):
+            '''
+            Return mid price as per available information
+            '''
+            interbank_bid, interbank_ask = self.lob(step)
+            bid = next(iter(sorted(interbank_bid.keys(), reverse = True)),None)
+            ask = next(iter(sorted(interbank_ask.keys())),None)
+            if bid is None:
+                return ask
+            elif ask is None:
+                return bid
+            else:
+                return (bid + ask)/2      
+            
+        def top_of_book_plot(self):
+            '''
+            Return the time series plot of top bid and ask
+            '''
+            top_bids, top_asks = self.top_of_book()
+            
+            fig = make_subplots(rows=1, cols=1)
+            temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
+            bid_price = go.Scatter(y = top_bids, name = 'top bid', line = dict(color = 'darkblue'))
+            ask_price = go.Scatter(y = top_asks, name = 'top ask', line = dict(color = 'darkred'))
+
+            fig.add_trace(bid_price)
+            fig.add_trace(ask_price)
+
+            fig.update_layout(title_text = 'Top of Bid/Ask', showlegend=True)
+            fig.update_layout(template = temp,
+                            hovermode = 'closest',
+                            margin = dict(l = 30, r = 20, t = 50, b = 20),
+                            height = 400, 
+                            width = 600, 
+                            showlegend = True,
+                            xaxis = dict(tickfont=dict(size=10)),
+                            yaxis = dict(side = "left", tickfont = dict(size=10)),
+                            xaxis_showgrid = False, 
+                            legend = dict(yanchor = "bottom", y = 0.9, xanchor = "left", x = 0.01,  orientation="h"))
+            return fig
+                
         def flatten(self, l):
             '''
             Return flatten list
@@ -608,8 +685,6 @@ class abmodel(mesa.Model):
                 hedged_amount = self.flatten(self.agent_hedged_amount[step])
                 arbed_price = self.flatten(self.agent_arbed_price[step])
                 arbed_amount = self.flatten(self.agent_arbed_amount[step])
-                
-                ##### is without hedging price more accurate? #####
                 
                 prices = np.array(traded_price + hedged_price + arbed_price)
                 amounts = np.array(traded_amount + hedged_amount + arbed_amount)
@@ -688,11 +763,12 @@ class abmodel(mesa.Model):
             self.agent_hedged_with = {}
             self.agent_bid_book = {}
             self.agent_ask_book = {}
+            self.agent_value = {} # denominated in currency A
             step = 0
-            self.update(model, step)
+            self.update(model, step, mid_price = 1)
     
             
-        def update(self, model, step):
+        def update(self, model, step, mid_price):
             '''
             Update the arbitragers details of each step
             '''
@@ -703,7 +779,8 @@ class abmodel(mesa.Model):
             self.agent_traded_price[step] = [a.traded_prices for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_traded_amount[step] = [a.traded_amount for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_traded_with[step] = [a.traded_banks for a in model.schedule.agents_by_type[self.agent_type].values()]
-
+            self.agent_value[step] = [a + (b/mid_price) for a, b in zip(self.agent_currencyA[step], self.agent_currencyB[step])]
+            
             
         def by_agent(self, agent_id):
             '''
@@ -717,6 +794,7 @@ class abmodel(mesa.Model):
             price_ts = []
             amount_ts = []
             with_ts = []
+            value_ts = []
             
             for step, agent_ids in self.agent_id.items():
                 if agent_id in agent_ids:
@@ -728,6 +806,7 @@ class abmodel(mesa.Model):
                     price_ts.append(self.agent_traded_price[step][idx])
                     amount_ts.append(self.agent_traded_amount[step][idx])
                     with_ts.append(self.agent_traded_with[step][idx])
+                    value_ts.append(self.agent_value[step][idx])
                 else:
                     break
                     
@@ -739,6 +818,7 @@ class abmodel(mesa.Model):
                         'Traded Price': price_ts,
                         'Traded Amount': amount_ts,
                         'Traded with': with_ts,
+                        'Firm Value': value_ts
                        })
   
             
@@ -754,6 +834,7 @@ class abmodel(mesa.Model):
                         'Traded Price': self.agent_traded_price[step],
                         'Traded Amount': self.agent_traded_amount[step],
                         'Traded with': self.agent_traded_with[step],
+                        'Firm Value': self.agent_value[step]
                        })
         
         def all_ids(self):
@@ -779,9 +860,10 @@ class abmodel(mesa.Model):
             self.agent_traded_price = {}
             self.agent_traded_amount = {}
             self.agent_traded_with = {}
+            self.agent_value = {} # denominated in currency A
             step = 0
             self.update_ex_trades(model, step)
-            self.update_trades(model, step)
+            self.update_trades(model, step, mid_price = 1)
     
             
         def update_ex_trades(self, model, step):
@@ -792,7 +874,7 @@ class abmodel(mesa.Model):
             self.agent_pos[step] = [a.pos for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_quote[step] = [(a.trade_direction, a.price, a.amount) for a in model.schedule.agents_by_type[self.agent_type].values()]
             
-        def update_trades(self, model, step):
+        def update_trades(self, model, step, mid_price):
             '''
             Update the speculator trades of each step
             ''' 
@@ -803,10 +885,11 @@ class abmodel(mesa.Model):
                     self.agent_type.trade_happened = False
 
             self.agent_currencyA[step] = [a.currencyA for a in model.schedule.agents_by_type[self.agent_type].values()]
-            self.agent_currencyB[step] = [a.currencyB for a in model.schedule.agents_by_type[self.agent_type].values()]                    
+            self.agent_currencyB[step] = [a.currencyB for a in model.schedule.agents_by_type[self.agent_type].values()]               
             self.agent_traded_price[step] = [a.traded_prices for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_traded_amount[step] = [a.traded_amount for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_traded_with[step] = [a.traded_partners for a in model.schedule.agents_by_type[self.agent_type].values()]
+            self.agent_value[step] = [a + (b/mid_price) for a, b in zip(self.agent_currencyA[step], self.agent_currencyB[step])]
             
         def by_agent(self, agent_id):
             '''
@@ -820,6 +903,7 @@ class abmodel(mesa.Model):
             price_ts = []
             amount_ts = []
             with_ts = []
+            value_ts = []
             
             for step, agent_ids in self.agent_id.items():
                 if agent_id in agent_ids:
@@ -832,6 +916,7 @@ class abmodel(mesa.Model):
                     price_ts.append(self.agent_traded_price[step][idx])
                     amount_ts.append(self.agent_traded_amount[step][idx])
                     with_ts.append(self.agent_traded_with[step][idx])
+                    value_ts.append(self.agent_value[step][idx])
                 else:
                     break
                     
@@ -843,7 +928,8 @@ class abmodel(mesa.Model):
                         'Quotes': quote_ts,
                         'Traded Price': price_ts,
                         'Traded Amount': amount_ts,
-                        'Traded with': with_ts
+                        'Traded with': with_ts,
+                        'Firm Value': value_ts
                        })
   
             
@@ -859,7 +945,8 @@ class abmodel(mesa.Model):
                         'Quotes': self.agent_quote[step],
                         'Traded Price': self.agent_traded_price[step],
                         'Traded Amount': self.agent_traded_amount[step],
-                        'Traded with': self.agent_traded_with[step]
+                        'Traded with': self.agent_traded_with[step],
+                        'Firm Value': self.agent_value[step]
                        })
         
         def all_ids(self):
