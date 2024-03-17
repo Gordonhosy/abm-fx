@@ -622,7 +622,7 @@ class abmodel(mesa.Model):
                             hovermode = 'closest',
                             margin = dict(l = 30, r = 20, t = 50, b = 20),
                             height = 400, 
-                            width = 600, 
+                            width = 900, 
                             showlegend = True,
                             xaxis = dict(tickfont=dict(size=10)),
                             yaxis = dict(side = "left", tickfont = dict(size=10)),

@@ -84,7 +84,7 @@ def central_bank_A(agent_id, central_bank_type, static_map, model):
     y = int(np.random.uniform(0, static_map.height))
     country = "A"
 
-    inflation_rate = 0.05
+    inflation_rate = 0.04
     interest_rate = 0.0025
     growth_rate = interest_rate - inflation_rate 
     target_inflation_rate = 0.02
@@ -113,7 +113,7 @@ def central_bank_B(agent_id, central_bank_type, static_map, model):
     inflation_rate = 0.01
     interest_rate = -0.0025
     growth_rate = interest_rate - inflation_rate 
-    target_inflation_rate = 0.02
+    target_inflation_rate = 0.015
 
     agent_central_bank = central_bank_type.agent(agent_id, 
                                                  model, 
@@ -136,14 +136,14 @@ def random_bank(agent_id, bank_type, init_pos, model):
     y = init_pos[1]
     
     # if it is a bank in country A --> JAPAN
-    if y < 20: 
+    if y < 60: 
         currencyA = int(np.random.uniform(bank_type.params.local_asset_min, bank_type.params.local_asset_max + 1))
         currencyB = int(np.random.uniform(bank_type.params.foreign_asset_min, bank_type.params.foreign_asset_max + 1))
         cost_currencyA = int(np.random.uniform(bank_type.params.local_costs_min, bank_type.params.local_costs_max + 1))
         cost_currencyB = int(np.random.uniform(bank_type.params.foreign_costs_min, bank_type.params.foreign_costs_max + 1))
     
     # if it is a bank in country B --> USA
-    elif y >= 20:
+    elif y >= 60:
         currencyA = int(np.random.uniform(bank_type.params.foreign_asset_min, bank_type.params.foreign_asset_max + 1))
         currencyB = int(np.random.uniform(bank_type.params.local_asset_min, bank_type.params.local_asset_max + 1))
         cost_currencyA = int(np.random.uniform(bank_type.params.foreign_costs_min, bank_type.params.foreign_costs_max + 1))
@@ -212,7 +212,6 @@ def random_fund(agent_id, fund_type, init_pos, strategy, model):
 
 # ---------------- Visualization Tools --------------------
 
-
 def plot_central_bank(model_results):
 
     steps_data = model_results['Step'].values
@@ -224,37 +223,44 @@ def plot_central_bank(model_results):
     target_inflation_rate_1_data, target_inflation_rate_2_data = zip(*model_results['target_inflation_rate'].values)
 
 
-    fig = make_subplots(rows = 1, cols = 2, subplot_titles=['Central Bank 1 - (USA)', 'Central Bank 2 - (JP)'])
+    fig = make_subplots(rows = 2, cols = 2, subplot_titles=['Central Bank 1', 'Central Bank 2'])
     temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
 
     inflation_rate_1 = go.Scatter(x = steps_data, y = inflation_rate_1_data, name = 'Inflation Rate(1)', mode = 'lines', line = dict(color = 'blue'))
     growth_rate_1 = go.Scatter(x = steps_data, y = growth_rate_1_data, name = 'Growth Rate(1)', mode = 'lines', line = dict(color = 'black'))
     interest_rate_1 = go.Bar(x = steps_data, y = interest_rate_1_data, name = 'Interest Rate(1)', marker = dict(color = 'green'))
+    # target_interest_rate_1 = go.Scatter(x = steps_data, y = target_interest_rate_1_data, name = 'target interest rate (1)',  line = dict(color = 'red'))
 
     inflation_rate_2 = go.Scatter(x = steps_data, y = inflation_rate_2_data, name = 'Inflation Rate(2)', mode = 'lines', line = dict(color = 'blue'))
-    growth_rate_2 = go.Scatter(x = steps_data, y = growth_rate_2_data, name = 'Growth Rate(1)', mode = 'lines', line = dict(color = 'black'))
+    growth_rate_2 = go.Scatter(x = steps_data, y = growth_rate_2_data, name = 'Growth Rate(2)', mode = 'lines', line = dict(color = 'black'))
     interest_rate_2 = go.Bar(x = steps_data, y = interest_rate_2_data, name = 'Interest Rate(2)', marker = dict(color = 'green'))
+    # target_interest_rate_2 = go.Scatter(x = steps_data, y = target_interest_rate_2_data, name = 'target interest rate (2)',  line = dict(color = 'red'))
 
 
     fig.add_trace(inflation_rate_1, row = 1, col = 1)
     fig.add_trace(interest_rate_1, row = 1, col = 1)
-    fig.add_trace(growth_rate_1, row = 1, col = 1)
+    fig.add_trace(interest_rate_1, row = 2, col = 1)
+    fig.add_trace(growth_rate_1, row = 2, col = 1)
+    # fig.add_trace(target_interest_rate_1, row = 1, col = 1)
+
     fig.add_trace(inflation_rate_2, row = 1, col = 2)
     fig.add_trace(interest_rate_2, row = 1, col = 2)
-    fig.add_trace(growth_rate_2, row = 1, col = 2)
+    fig.add_trace(interest_rate_2, row = 2, col = 2)
+    fig.add_trace(growth_rate_2, row = 2, col = 2)
+    # fig.add_trace(target_interest_rate_2, row = 1, col = 2)
 
     fig.update_layout(title_text = 'Central Bank Agent Behavior and Macroeconomics', showlegend=True)
 
     fig.update_layout(template = temp,
-                    hovermode = 'closest',
-                    margin = dict(l = 30, r = 20, t = 50, b = 20),
-                    height = 400, 
-                    width = 1200, 
-                    showlegend = True,
-                    xaxis = dict(tickfont=dict(size=10)),
-                    yaxis = dict(side = "left", tickfont = dict(size=10)),
-                    xaxis_showgrid = False, 
-                    legend = dict(yanchor = "bottom", y = 0.9, xanchor = "left", x = 0.01,  orientation="h"))
+                      hovermode = 'closest',
+                      margin = dict(l = 40, r = 40, t = 100, b = 40),
+                      height = 800, 
+                      width = 1200, 
+                      showlegend = True,
+                      xaxis = dict(tickfont=dict(size=10)),  
+                      yaxis = dict(side = "left", tickfont = dict(size=10)),
+                      xaxis_showgrid = False, 
+                      legend = dict(yanchor = "bottom", y = 0.45, xanchor = "left", x = 0.01,  orientation="h"))
 
     return fig 
 
@@ -280,7 +286,6 @@ def plot_map(model):
                                     x = 0.01))
 
     return fig
-
 
 def plot_agent_movement(model, agent_position_df):
 
@@ -335,13 +340,14 @@ def built_agent_position_df(model, steps):
         pos_banks['agent_type'] = 'banks'
 
         # international banks
-        pos_international_banks = pd.DataFrame(model.international_bank_details.agent_pos[i], index = model.international_bank_details.agent_id[i], columns = ["y", "x"]).reset_index(names = 'agent_id')
-        pos_international_banks['steps'] = i
-        pos_international_banks['agent_type'] = 'international_banks'
+        #pos_international_banks = pd.DataFrame(model.international_bank_details.agent_pos[i], index = model.international_bank_details.agent_id[i], columns = ["y", "x"]).reset_index(names = 'agent_id')
+        #pos_international_banks['steps'] = i
+        #pos_international_banks['agent_type'] = 'international_banks'
 
 
         # aggregate position df
-        frames = [pos_corps, pos_banks, pos_international_banks]
+        #frames = [pos_corps, pos_banks, pos_international_banks]
+        frames = [pos_corps, pos_banks]
         all_position = pd.concat(frames)
         
         if i == 0:
@@ -379,8 +385,6 @@ def plot_agent_population(agent_position_df):
                                     x = 0.01))
 
     return fig
-
-
 
 def plot_central_bank_behaviors_diagram(image_path):
 
@@ -440,3 +444,65 @@ def plot_central_bank_behaviors_diagram(image_path):
     # Disable the autosize on double click because it adds unwanted margins around the image
     # More detail: https://plotly.com/python/configuration-options/
     return fig
+
+def corporate_value_and_interest_rate_plot(model, model_results, steps):
+
+    steps_data = model_results['Step'].values
+    corporate_value = [model.corporate_details.by_step(i)['Firm Value'].mean() for i in range(steps)]
+    interest_rate_1_data, interest_rate_2_data = zip(*model_results['interest_rate'].values)
+
+    fig = make_subplots(rows=1, cols=1, specs=[[{"secondary_y": True}]])
+
+    temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
+    interest_rate_1 = go.Bar(x = steps_data, y = interest_rate_1_data, name = 'Interest Rate(1)', marker = dict(color = 'green', opacity = 0.6))
+    interest_rate_2 = go.Bar(x = steps_data, y = interest_rate_2_data, name = 'Interest Rate(2)', marker = dict(color = 'grey',  opacity = 0.6))
+    corporate_value_line = go.Scatter(x = steps_data, y = corporate_value, name = 'corporate value')
+
+    fig.add_trace(corporate_value_line, row = 1, col =1, secondary_y='True')
+    fig.add_trace(interest_rate_1, row = 1, col = 1)
+    fig.add_trace(interest_rate_2, row = 1, col = 1)
+
+
+
+    fig.update_layout(template = temp,
+                    hovermode = 'closest',
+                    margin = dict(l = 30, r = 20, t = 50, b = 20),
+                    height = 400, 
+                    width = 600, 
+                    showlegend = True,
+                    xaxis = dict(tickfont=dict(size=10)),  
+                    yaxis = dict(side = "left", tickfont = dict(size=10)),
+                    legend = dict(yanchor = "bottom", y = 1, xanchor = "left", x = 0.01,  orientation="h"))
+
+    return fig 
+
+def bank_value_and_interest_rate_plot(model, model_results, steps):
+
+    steps_data = model_results['Step'].values
+    bank_value = [model.bank_details.by_step(i)['Firm Value'].mean() / 10 for i in range(steps)]
+    interest_rate_1_data, interest_rate_2_data = zip(*model_results['interest_rate'].values)
+
+    fig = make_subplots(rows=1, cols=1, specs=[[{"secondary_y": True}]])
+
+    temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
+    interest_rate_1 = go.Bar(x = steps_data, y = interest_rate_1_data, name = 'Interest Rate(1)', marker = dict(color = 'green', opacity = 0.6))
+    interest_rate_2 = go.Bar(x = steps_data, y = interest_rate_2_data, name = 'Interest Rate(2)', marker = dict(color = 'grey',  opacity = 0.6))
+    bank_value_line = go.Scatter(x = steps_data, y = bank_value, name = 'bank value', line = dict(color = 'red'))
+
+    fig.add_trace(bank_value_line, row = 1, col =1, secondary_y='True')
+    fig.add_trace(interest_rate_1, row = 1, col = 1)
+    fig.add_trace(interest_rate_2, row = 1, col = 1)
+
+
+
+    fig.update_layout(template = temp,
+                hovermode = 'closest',
+                margin = dict(l = 30, r = 20, t = 50, b = 20),
+                height = 400, 
+                width = 600, 
+                showlegend = True,
+                xaxis = dict(tickfont=dict(size=10)),  
+                yaxis = dict(side = "left", tickfont = dict(size=10)),
+                legend = dict(yanchor = "bottom", y = 1, xanchor = "left", x = 0.01,  orientation="h"))
+
+    return fig 

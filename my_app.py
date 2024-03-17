@@ -10,7 +10,7 @@ from static import *
 
 
 # ----------- Simulation ------------------------------
-steps = 30
+steps = 1000
 model = abmodel(static_map_v0(), all_agents())
 model.run_model(steps)
 model_results = model.datacollector.get_model_vars_dataframe()
@@ -22,19 +22,21 @@ map_resource_fig = plot_map(model)
 
 agent_position_df = built_agent_position_df(model, steps)
 agent_movement_fig = plot_agent_movement(model, agent_position_df)
+
+
+corporate_value_fig = corporate_value_and_interest_rate_plot(model, model_results, steps)
+bank_value_fig = bank_value_and_interest_rate_plot(model, model_results, steps)
+
 agent_population_fig = plot_agent_population(agent_position_df)
 
-banks_lob_fig = model.bank_details.lob(steps, agent = 'Banks')
-international_bank_lob_fig = model.international_bank_details.lob(steps, agent = 'International Banks')
+banks_lob_fig = model.bank_details.lob_plot(steps)
 bid_ask_price_fig = model.bank_details.price_plot()
+top_of_the_book_fig = model.bank_details.top_of_book_plot()
 
-def encode_image(image_path):
-    with open(image_path, 'rb') as image_file:
-        encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
-    return f'data:image/png;base64,{encoded_image}'
 
-image_path = "ABM_FX/Central Bank Agent Behavior.png"
-encoded_image = encode_image(image_path)
+
+
+
 
 # ---------------------------------------------------
 
@@ -76,35 +78,48 @@ app.layout = html.Div([
         html.P(children = "We aim to mimic the macroeconomic conditions in Japan and the USA, with one characterized by negative interest rates and lower growth, and the other by higher growth and inflation rates.", style = {'font-size': '20px', "margin-left" : "30px"}),
         dcc.Graph(id = "Central Bank Chart", figure = central_bank_fig, style = {'margin-left' : '10px'}),
         html.P(children = "Both central bank agent behaviors are modeled based on Taylor's rule. The fundamental concept behind Taylor’s rule model is to offer a systematic and transparent approach for central banks to adjust interest rates in response to changes in inflation and output.", style = {'font-size': '20px', "margin-left" : "30px"}),
-        html.Img(src = encoded_image, style = {'width': '80%', 'height': '30%', 'margin-left' : '30px'}),
 
         # Part 2 - Simulation Result
         html.Div([html.H1(children = "2. Simulation Result", style = {'textAlign': 'center', 'font-size': '25px', 'text-align': 'left'})]),
-        html.P(children = '2-1.) Movement of Corporate Agents', id = 'corporate_agent_movement_title', style = {'font-size': '20px', 
-                                                                                           'width': '50%', 
-                                                                                           'border-radius': '20px', 
-                                                                                           'text-align': 'left', 
-                                                                                           'padding-left': "20px", 
-                                                                                           'font-family' : 'Roboto', 
-                                                                                           "margin-left" : "20px", 
-                                                                                           "margin-up" : "-120px", 
-                                                                                           'background' : 'rgb(233 238 246)'}),
+        html.P(children = '2-1.) Movement and of Corporate Agents', id = 'corporate_agent_movement_title', style = {'font-size': '20px', 
+                                                                                                                'width': '50%', 
+                                                                                                                'border-radius': '20px', 
+                                                                                                                'text-align': 'left', 
+                                                                                                                'padding-left': "20px", 
+                                                                                                                'font-family' : 'Roboto', 
+                                                                                                                "margin-left" : "20px", 
+                                                                                                                "margin-up" : "-120px", 
+                                                                                                                'background' : 'rgb(233 238 246)'}),
         dcc.Graph(id = "Agent Movement Chart", figure = agent_movement_fig, style = {'margin-left' : '10px'}),
 
-        html.P(children = '2-2.) Agent Population & Bid/Ask Price', id = 'agent_population_title', style = {'font-size': '20px',
-                                                                                                            'width': '50%', 
-                                                                                                            'border-radius': '20px', 
-                                                                                                            'text-align': 'left', 
-                                                                                                            "padding-left": "20px", 
-                                                                                                            'font-family' : 'Roboto', 
-                                                                                                            "margin-left" : "20px", 
-                                                                                                            "margin-up" : "-120px", 
-                                                                                                            'background' : 'rgb(233 238 246)'}),
-        html.Div(children = [dcc.Graph(id = "Agent Population Chart", figure = agent_population_fig, style = {'margin-left' : '10px'}), 
+        html.P(children = '2-2.) Approximate Value of Agents', id = 'corporate_agent_movement_title', style = {'font-size': '20px', 
+                                                                                                                'width': '50%', 
+                                                                                                                'border-radius': '20px', 
+                                                                                                                'text-align': 'left', 
+                                                                                                                'padding-left': "20px", 
+                                                                                                                'font-family' : 'Roboto', 
+                                                                                                                "margin-left" : "20px", 
+                                                                                                                "margin-up" : "-120px", 
+                                                                                                                'background' : 'rgb(233 238 246)'}),
+
+         html.Div(children = [dcc.Graph(id = "Corporate Value Chart", figure = corporate_value_fig, style = {'margin-left' : '10px'}), 
+                             dcc.Graph(id = "Bank Value Chart", figure = bank_value_fig, style = {'margin-left':'10px'})],
+                             style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
+
+        html.P(children = '2-3.) FX Price Dynamic', id = 'agent_population_title', style = {'font-size': '20px',
+                                                                                            'width': '50%', 
+                                                                                            'border-radius': '20px', 
+                                                                                            'text-align': 'left', 
+                                                                                            "padding-left": "20px", 
+                                                                                            'font-family' : 'Roboto', 
+                                                                                            "margin-left" : "20px", 
+                                                                                            "margin-up" : "-120px", 
+                                                                                            'background' : 'rgb(233 238 246)'}),
+        html.Div(children = [dcc.Graph(id = "Best Bid/Ask Price Chart", figure = top_of_the_book_fig, style = {'margin-left' : '10px'}), 
                              dcc.Graph(id = "Bid Ask Price Chart", figure = bid_ask_price_fig, style = {'margin-left':'10px'})],
                              style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
 
-        html.P(children = '2-3.) Limit Order Book of Interbank Market at Final Step', id = 'limit_order_book_title', style = {'font-size': '20px', 
+        html.P(children = '2-4.) Limit Order Book of Interbank Market', id = 'limit_order_book_title', style = {'font-size': '20px', 
                                                                                                                  'width': '50%', 
                                                                                                                  'border-radius': '20px', 
                                                                                                                  'text-align': 'left', 
@@ -114,10 +129,17 @@ app.layout = html.Div([
                                                                                                                  'margin-up' : "-120px", 
                                                                                                                  'background' : 'rgb(233 238 246)'}),
 
-        html.Div(children = [dcc.Graph(id = "Banks LOB Chart", figure = banks_lob_fig, style = {'margin-left' : '10px'}),
-                             dcc.Graph(id = "International Banks LOB Chart", figure = international_bank_lob_fig, style = {'margin-left' : '10px'}),
-                            ], style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
+        html.Div(children = [dcc.Graph(id = "Banks LOB Chart", figure = banks_lob_fig, style = {'margin-left' : '10px'})], style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
 
+        html.P(children = '2-5.) Stylized Effect of the FX Market', id = 'limit_order_book_title', style = {'font-size': '20px', 
+                                                                                                                 'width': '50%', 
+                                                                                                                 'border-radius': '20px', 
+                                                                                                                 'text-align': 'left', 
+                                                                                                                 'padding-left': "20px", 
+                                                                                                                 'font-family' : 'Roboto', 
+                                                                                                                 'margin-left' : "20px", 
+                                                                                                                 'margin-up' : "-120px", 
+                                                                                                                 'background' : 'rgb(233 238 246)'}),
 
         html.Footer("© 2024 Agent-Based Modeling Team Banana. All rights reserved.", style={'text-align': 'center', 'color': '#555', 'padding': '10px', 'margin-top': '20px'})
 ]) 
