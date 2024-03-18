@@ -82,7 +82,7 @@ class params_corporate_v0():
     parameters for a corporate agent
     '''
     def __init__(self):
-        self.init_population = 300
+        self.init_population = 200
         self.country = ["A", "B"]
         self.asset_min = 75
         self.asset_max = 100

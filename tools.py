@@ -19,15 +19,24 @@ def random_corporate(agent_id, corporate_type, static_map, model):
     map_b = static_map.currencyB_map_init
     world_map = map_a + map_b
 
-    non_zero_index = np.nonzero(world_map)
-    shuffle_index_len = len(non_zero_index[0])
-    random_pos_index = np.random.randint(0, shuffle_index_len, size=1)
+    # non_zero_index = np.nonzero(world_map)
+    # shuffle_index_len = len(non_zero_index[0])
+    # random_pos_index = np.random.randint(0, shuffle_index_len, size=1)
+
+
+    country = str(np.random.choice(corporate_type.params.country))
+    if (country == "A"):
+        non_zero_index = np.nonzero(map_a)
+        shuffle_index_len = len(non_zero_index[0])
+        random_pos_index = np.random.randint(0, shuffle_index_len, size=1)
+    elif (country == "B"):
+        non_zero_index = np.nonzero(map_b)
+        shuffle_index_len = len(non_zero_index[0])
+        random_pos_index = np.random.randint(0, shuffle_index_len, size=1)
 
     x = int(non_zero_index[0][random_pos_index])
     y = int(non_zero_index[1][random_pos_index])
 
-
-    country = str(np.random.choice(corporate_type.params.country))
     level = int(np.random.uniform(corporate_type.params.level_min, corporate_type.params.level_max + 1))
     vision = level
 

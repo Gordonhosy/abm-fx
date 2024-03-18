@@ -34,6 +34,7 @@ class agent_corporate_v0(mesa.Agent):
         self.price = None
         self.utilities = imp_utility
         self.improve_utility = np.random.choice(self.utilities)
+        self.limit = 0
     
     def is_occupied(self, pos):
         '''
@@ -102,7 +103,12 @@ class agent_corporate_v0(mesa.Agent):
         if len(options) == 0:
             print(self.unique_id)
         random.shuffle(options)
-        final_decision = options[0] # random choice if more than one max
+
+        if (self.pos in options) and (self.limit <= 3):
+            final_decision = self.pos
+            self.limit += 1
+        else:
+            final_decision = options[0] # random choice if more than one max
         
         # 4. Move agent
         self.model.grid.move_agent(self, final_decision)
