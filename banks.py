@@ -282,7 +282,7 @@ class agent_bank(mesa.Agent):
         for opponent in neighbors:
             if opponent:
                 if (opponent.amount is None) | ((opponent.price is None) | (opponent.trade_direction is None) | (opponent.amount == 0)): # the corporate/speculator does not want to trade
-                    return
+                    pass
                 else:
                     self.trade_LOB(opponent)
                     self.update_bid_ask()

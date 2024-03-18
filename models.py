@@ -310,7 +310,13 @@ class abmodel(mesa.Model):
                 for bank_type in self.all_agents.banks:
                     for bank in [a for a in self.schedule.agents_by_type[bank_type.agent].values()]:
                         bank.update_bid_ask()
-                
+        
+        
+        for speculator_type in self.all_agents.speculators:
+            speculator_shuffle = self.randomise_agents(speculator_type.agent)
+            for speculator in speculator_shuffle:
+                speculator.adjust_aggressiveness()
+        
         # need to update banks first for the new mid price
         self.bank_details.update(self, self.schedule.steps + 1)
         #self.international_bank_details.update(self, self.schedule.steps + 1)
