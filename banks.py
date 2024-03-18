@@ -447,7 +447,6 @@ class agent_bank(mesa.Agent):
         
         # add premium for banks to earn
         premium_currencyB = np.where(indiff_currencyA - self.currencyA > 0, abs(indiff_currencyB - self.currencyB)*(1-self.premium), abs(indiff_currencyB - self.currencyB)*(1+self.premium))
-
         # calculate the prices that gives the bank a slightly higher utility (equivalent to the vwap price)
         indiff_bid = [y/x for x, y in zip(indiff_currencyA - self.currencyA, premium_currencyB) if x > 0]
         indiff_ask = [y/abs(x) for x, y in zip(indiff_currencyA - self.currencyA, premium_currencyB) if x < 0]
@@ -484,8 +483,11 @@ class agent_bank(mesa.Agent):
         Update the bid ask based on the current inventory
         '''
         self.bid_book, self.ask_book = self.calc_bid_ask()
-        
-        
+
+    def increase_costs(self, value_a = 0.5, value_b = 0.5):
+        print("Increasing costs...")
+        self.cost_currencyA += value_a
+        self.cost_currencyB += value_b   
     
 # International bank agent inherited from bank agent
 class agent_international_bank(agent_bank):

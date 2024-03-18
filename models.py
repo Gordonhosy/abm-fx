@@ -13,7 +13,6 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-
 class abmodel(mesa.Model):
     '''
     Generalized model to run the simulation
@@ -24,7 +23,8 @@ class abmodel(mesa.Model):
         self.running = True
         self._steps = 0
         self.all_agents = all_agents
-            
+        self.milestone = False
+        self.direction = []         
         # initiate the mesa grid class
         self.grid = mesa.space.MultiGrid(self.static_map.width, self.static_map.height, torus = False)
         
@@ -230,6 +230,12 @@ class abmodel(mesa.Model):
         self.speculator_details.update_ex_trades(self, self.schedule.steps + 1)
             
         # banks
+        bank_value = [self.bank_details.by_step(i)['Firm Value'].mean() / 10 for i in range(self.schedule.steps)]
+        try:
+            bank_value = bank_value[-1]
+        except:
+            bank_value = 0
+
         for bank_type in self.all_agents.banks:
             banks_shuffle = self.randomise_agents(bank_type.agent)
             for bank in banks_shuffle:
@@ -243,6 +249,48 @@ class abmodel(mesa.Model):
                 bank.arbed_desks = []
                 bank.arbed_amount = []
                 bank.trade_with_corps_funds()
+
+                if (bank_value < 1000):
+                    self.direction.append(1)
+                elif (1000 < bank_value < 2000):
+                    self.direction.append(2)
+                elif (2000 < bank_value < 3000):
+                    self.direction.append(3)    
+
+                if (self.milestone == False) and (1500 > bank_value > 1000):
+                    print("#1 Check succeed")
+                    if (self.direction[-1] >= self.direction[-2]):
+                        bank.increase_costs(5,5)
+                    else:
+                        bank.increase_costs(-2,-2)
+
+                    self.milestone = True
+
+                elif (2000 > bank_value > 1500) and (self.milestone == True):
+                    print("#2 Check succeed")
+                    if (self.direction[-1] >= self.direction[-2]):
+                        bank.increase_costs(10,10)
+                    else:
+                        bank.increase_costs(-5,-5)
+
+                    self.milestone = False
+
+                elif (2500 > bank_value > 2000) and (self.milestone == False):
+                    print("#3 Check succeed")
+                    if (self.direction[-1] >= self.direction[-2]):
+                        bank.increase_costs(15,15)
+                    else:
+                        bank.increase_costs(-10,-10)
+
+                    self.milestone = True
+
+                elif (bank_value > 2500) and (self.milestone == True):
+                    print("#4 Check succeed")
+                    if (self.direction[-1] >= self.direction[-2]):
+                        bank.increase_costs(25,25)
+                    else:
+                        bank.increase_costs(-15,-15)
+                    self.milestone = False
             
             banks_shuffle = self.randomise_agents(bank_type.agent)
             for bank in banks_shuffle:
@@ -281,8 +329,6 @@ class abmodel(mesa.Model):
         self.schedule.steps += 1
         self._steps += 1
         self.datacollector.collect(self)
-
-        
         
     def init_new_corporates(self):
         '''
