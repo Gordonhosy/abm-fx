@@ -152,8 +152,8 @@ class params_speculator():
     parameters for a speculator
     '''
     def __init__(self):
-        self.init_pos = [(15,46), (15,70)]
-        self.strategies = ['momentum', 'momentum']
+        self.init_pos = [(15,46), (15,70), (14,46), (16,70)]
+        self.strategies = ['momentum', 'momentum', 'mean revert', 'mean revert']
         self.asset_min = 75
         self.asset_max = 100
         self.costs_min = 1
