@@ -90,7 +90,7 @@ class agent_speculator(mesa.Agent):
             if self.amount is None:
                 delta = self.target_execution - (self.amount_placed - 0)/self.amount_placed # how many % of order is executed
                 self.aggressive = max(self.aggressive * (1 + delta), 0.01)
-                self.missing_amt = 0
+                self.missing_amount = 0
                 self.amount_placed = None
                 
             else:
@@ -153,7 +153,6 @@ class agent_speculator(mesa.Agent):
             self.amount_placed = None
             return None, None, None
             
-            
     def strategy_mean_revert(self, model):
         '''
         Mean reverting strategy to buy when there is downward trend, and short when there is upward trend
@@ -206,7 +205,6 @@ class agent_speculator(mesa.Agent):
             self.rest -= 1
             self.amount_placed = None
             return None, None, None
-    
     
     def strategy_uncoveredIR(self, model):
         '''
@@ -281,6 +279,10 @@ class agent_speculator(mesa.Agent):
                             return 'long', self.missing_amount, round(asks[-1]*(1 + self.aggressive), 2)
                         else:
                             return 'short', self.missing_amount, round(bids[-1]*(1 - self.aggressive), 2)
+                    
+                    else:
+
+                        return None, None, None
                 
             elif ir_diff < -0.01:
                 # sizing
