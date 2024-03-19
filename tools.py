@@ -32,6 +32,7 @@ def random_corporate(agent_id, corporate_type, static_map, model, country=None):
         non_zero_index = np.nonzero(map_a)
         shuffle_index_len = len(non_zero_index[0])
         random_pos_index = np.random.randint(0, shuffle_index_len, size=1)
+        
     elif (country == "B"):
         non_zero_index = np.nonzero(map_b)
         shuffle_index_len = len(non_zero_index[0])
@@ -100,6 +101,9 @@ def central_bank_A(agent_id, central_bank_type, static_map, model):
     interest_rate = 0.0025
     growth_rate = interest_rate - inflation_rate 
     target_inflation_rate = 0.02
+    currencyA = 1000000
+    currencyB = 0
+    lend = 0
 
     agent_central_bank = central_bank_type.agent(agent_id, 
                                                  model, 
@@ -108,6 +112,9 @@ def central_bank_A(agent_id, central_bank_type, static_map, model):
                                                  interest_rate = interest_rate, 
                                                  inflation_rate = inflation_rate, 
                                                  growth_rate = growth_rate,
+                                                 currencyA = currencyA,
+                                                 currencyB = currencyB,
+                                                 lend = lend,
                                                  target_inflation_rate = target_inflation_rate,
                                                  country = country)
 
@@ -126,6 +133,9 @@ def central_bank_B(agent_id, central_bank_type, static_map, model):
     interest_rate = -0.0025
     growth_rate = interest_rate - inflation_rate 
     target_inflation_rate = 0.015
+    currencyA = 0
+    currencyB = 500000
+    lend = 0
 
     agent_central_bank = central_bank_type.agent(agent_id, 
                                                  model, 
@@ -134,11 +144,13 @@ def central_bank_B(agent_id, central_bank_type, static_map, model):
                                                  interest_rate = interest_rate, 
                                                  inflation_rate = inflation_rate, 
                                                  growth_rate = growth_rate,
+                                                 currencyA = currencyA,
+                                                 currencyB = currencyB,
+                                                 lend = lend,
                                                  target_inflation_rate = target_inflation_rate,
                                                  country = country)
 
     return agent_central_bank
-
 
 def random_bank(agent_id, bank_type, init_pos, model):
     '''

@@ -16,7 +16,7 @@ class agent_central_bank_v0(mesa.Agent):
     - target inflation rate (2% or 3%)
     """ 
 
-    def __init__(self, unique_id, model, pos, moore, interest_rate, inflation_rate, growth_rate, target_inflation_rate, country):
+    def __init__(self, unique_id, model, pos, moore, interest_rate, inflation_rate, growth_rate, target_inflation_rate, country, currencyA, currencyB, lend):
         # Pass the parameters to the parent class.
         super().__init__(unique_id, model)
 
@@ -25,6 +25,9 @@ class agent_central_bank_v0(mesa.Agent):
         self.adjust_rate_unit = 0.0025 
         self.country = country
         self.update_duration = 0
+        self.currencyA = currencyA
+        self.currencyB = currencyB        
+        self.lend = lend
         # Create the agent's attribute and set the initial values.
 
         # Real World Observation
@@ -38,9 +41,11 @@ class agent_central_bank_v0(mesa.Agent):
         # initial target growth rate (Long term GDP Growth)
         if self.country == "A":
             self.target_growth_rate = target_inflation_rate + 0.01
+            self.original_account_value = self.currencyA
         
         if self.country == "B":
             self.target_growth_rate = target_inflation_rate 
+            self.original_account_value = self.currencyB
 
     def step(self):
         """
@@ -57,6 +62,8 @@ class agent_central_bank_v0(mesa.Agent):
         self.economic_cycle() # macroeconomic policy is tightening/easing.
         self.calculate_growth_rate() # calculate period end growth rate with inflation rate and interest rate.
         self.interest_rate_difference_effect()
+
+        self.check_central_bank_account_value()
         
     def calculate_target_interest_rate(self):
         """
@@ -248,8 +255,31 @@ class agent_central_bank_v0(mesa.Agent):
         return self.country
         
         
-        
+    def check_central_bank_account_value(self):
 
+        if self.country == "A":
+
+            if self.currencyA < 0.5 * self.original_account_value:
+
+                self.currencyA += 200000 # print money 
+                self.inflation_rate = self.inflation_rate + np.random.normal(1,1) * 0.005
+            
+            elif (self.currencyA >= 1.2 * self.original_account_value):
+
+                self.currencyA -= 200000 # reduce liquidity on the market 
+                self.inflation_rate = self.inflation_rate - np.random.normal(1,1) * 0.005                
+
+        elif self.country == "B":
+
+            if self.currencyB < 0.5 * self.original_account_value:
+
+                self.currencyB += 200000 # print money 
+                self.inflation_rate = self.inflation_rate + np.random.normal(1,1) * 0.005
+            
+            elif self.currencyB >= 1.2 * self.original_account_value:
+
+                self.currencyB -= 200000 # reduce liquidity on the market 
+                self.inflation_rate = self.inflation_rate - np.random.normal(1,1) * 0.005      
 
 
 

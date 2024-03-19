@@ -31,13 +31,15 @@ class agent_speculator(mesa.Agent):
         self.aggressive = 0.01
         self.missing_amount = 0
         self.missing_direction = 0
+
         # strategy specific parameters
-        if (strat == 'momentum') | (strat == 'mean revert'):
+        if (self.strategy == 'momentum') | (self.strategy == 'mean revert'):
             self.ma, self.sd = self.random_ma()
             self.target_execution = 0.8
-        if strat == 'uncoveredIR':
-            self.borrow_A = 0
-            self.borrow_B = 0
+
+        if self.strategy == 'uncoveredIR':
+            self.borrowA = 0
+            self.borrowB = 0
             self.target_execution = 1.0
             
         
@@ -210,56 +212,67 @@ class agent_speculator(mesa.Agent):
         '''
         Uncovered interest rate strategy to benefit from interest rate differentials, betting that the future spot FX does not decline (for A vs B)
         '''
+        step = model.schedule.steps + 1
+        
+        # first compute the interest gains
+        central_bank = [agent for agent in model.schedule.agents if isinstance(agent, model.all_agents.central_banks[0].agent)]
+        interest_rate = [agent.interest_rate for agent in central_bank]
+        self.currencyA += -self.borrowA * interest_rate[0] / 252 # fed fund rate is overnight rate, do we need to annualized this?
+        self.currencyB += -self.borrowB * interest_rate[1] / 252
+        central_bank[0].currencyA += self.borrowA * interest_rate[0] / 252 ### need to change attribute name ###
+        central_bank[1].currencyB += self.borrowB * interest_rate[1] / 252 ### need to change attribute name ###
+
+
+        # see if there are trading opportunities
+        ir_diff = interest_rate[0] - interest_rate[1]
+        bids, asks = model.bank_details.top_of_book()
+        
+        # update mid price if the top bid/ask is not None, otherwise mid price stay the same
+        if bids[-1] != None:
+            last_mid = (bids[-1] + asks[-1])/2
+
         if step == 0:
             return None, None, None
+
         else:
-            # first compute the interest gains
-            central_banks = [agent for agent in model.schedule.agents if isinstance(agent, model.all_agents.central_banks[0].agent)]
-            interest_rate = [agent.interest_rate for agent in central_banks]
-            self.currencyA += -self.borrowA * interest_rate[0] / 252
-            self.currencyB += -self.borrowB * interest_rate[1] / 252
-            central_bank[0].currencyA += self.borrowA * interest_rate[0] / 252 ### need to change attribute name ###
-            central_bank[1].currencyB += self.borrowB * interest_rate[1] / 252 ### need to change attribute name ###
-            
-            # see if there are trading opportunities
-            ir_diff = interest_rate[0] - interest_rate[1]
-            bids, asks = model.bank_details.top_of_book()
-            last_mid = bids[-1] + asks[-1]
+
             if ir_diff > 0.01:
                 # sizing
-                target_position = self.ir_diff * 10 * (self.currencyA + (self.currencyB/last_mid)) # amount in terms of currency A
+                target_position = ir_diff * 10 * (self.currencyA + (self.currencyB/last_mid)) # amount in terms of currency A
                 target_in_B = target_position * last_mid
                 # need to increase borrow B to buy A
-                if (self.borrow_B == 0) | (target_in_B/self.borrow_B > 1.2):
+                if (self.borrowB == 0) | (target_in_B/self.borrowB > 1.2):
                     # borrow currency B from central bank B
-                    add_borrow = int(target_in_B - self.borrow_B)
-                    self.borrow_B += add_borrow
+                    add_borrow = int(target_in_B - self.borrowB)
+                    self.borrowB += add_borrow
                     central_bank[1].currencyB -= add_borrow ### need to change attribute name ###
                     central_bank[1].lend += add_borrow ### need to change attribute name ###
                     
                     # buy treasury in currency A from central bank A
-                    self.borrow_A -= int(add_borrow/last_mid) # negative borrow means lend
+                    self.borrowA -= int(add_borrow/last_mid) # negative borrow means lend
                     central_bank[0].currencyA += int(add_borrow/last_mid) ### need to change attribute name ###
                     central_bank[0].lend -= int(add_borrow/last_mid) ### need to change attribute name ###
                     
                     total_amount = int(add_borrow/last_mid) + self.missing_direction * self.missing_amount
                     self.amount_placed = total_amount
                     self.missing_direction = 1
+
                     return 'long', total_amount, round(asks[-1]*(1 + self.aggressive), 2)
                 
-                elif target_in_B/self.borrow_B < 0.8:
-                    reduce_borrow = int(self.borrow_B - target_in_B)
-                    self.borrow_B -= reduce_borrow
+                elif target_in_B/self.borrowB < 0.8:
+                    reduce_borrow = int(self.borrowB - target_in_B)
+                    self.borrowB -= reduce_borrow
                     central_bank[1].currencyB += reduce_borrow ### need to change attribute name ###
                     central_bank[1].lend -= reduce_borrow ### need to change attribute name ###
                     
-                    self.borrow_A += int(reduce_borrow/last_mid) # negative borrow means lend
+                    self.borrowA += int(reduce_borrow/last_mid) # negative borrow means lend
                     central_bank[0].currencyA -= int(reduce_borrow/last_mid) ### need to change attribute name ###
                     central_bank[0].lend += int(reduce_borrow/last_mid) ### need to change attribute name ###
                     
                     total_amount = int(reduce_borrow/last_mid) - self.missing_direction * self.missing_amount
                     self.amount_placed = total_amount
                     self.missing_direction = -1
+
                     return 'short', total_amount, round(bids[-1]*(1 - self.aggressive), 2)
                     
                 else:
@@ -274,15 +287,15 @@ class agent_speculator(mesa.Agent):
                 target_position = -self.ir_diff * 10 * (self.currencyA + (self.currencyB/last_mid)) # amount in terms of currency A
                 target_in_A = target_position
                 # need to increase borrow A buy B
-                if (self.borrow_A == 0) | (target_in_A/self.borrow_A > 1.2):
+                if (self.borrowA == 0) | (target_in_A/self.borrowA > 1.2):
                     # borrow currency A from central bank A
-                    add_borrow = int(target_in_A - self.borrow_A)
-                    self.borrow_A += add_borrow
+                    add_borrow = int(target_in_A - self.borrowA)
+                    self.borrowA += add_borrow
                     central_bank[0].currencyA -= add_borrow ### need to change attribute name ###
                     central_bank[0].lend += add_borrow ### need to change attribute name ###
                     
                     # buy treasury in currency A from central bank A
-                    self.borrow_B -= int(add_borrow*last_mid) # negative borrow means lend
+                    self.borrowB -= int(add_borrow*last_mid) # negative borrow means lend
                     central_bank[1].currencyB += int(add_borrow*last_mid) ### need to change attribute name ###
                     central_bank[1].lend -= int(add_borrow*last_mid) ### need to change attribute name ###
                     
@@ -291,13 +304,13 @@ class agent_speculator(mesa.Agent):
                     self.missing_direction = -1
                     return 'short', total_amount, round(bids[-1]*(1 - self.aggressive), 2)
                 
-                elif target_in_A/self.borrow_A < 0.8:
-                    reduce_borrow = int(self.borrow_A - target_in_A)
-                    self.borrow_A -= reduce_borrow
+                elif target_in_A/self.borrowA < 0.8:
+                    reduce_borrow = int(self.borrowA - target_in_A)
+                    self.borrowA -= reduce_borrow
                     central_bank[0].currencyA += reduce_borrow ### need to change attribute name ###
                     central_bank[0].lend -= reduce_borrow ### need to change attribute name ###
                     
-                    self.borrow_B += int(reduce_borrow*last_mid) # negative borrow means lend
+                    self.borrowB += int(reduce_borrow*last_mid) # negative borrow means lend
                     central_bank[1].currencyB -= int(reduce_borrow*last_mid) ### need to change attribute name ###
                     central_bank[1].lend += int(reduce_borrow*last_mid) ### need to change attribute name ###
                     
@@ -314,8 +327,12 @@ class agent_speculator(mesa.Agent):
                             return 'short', self.missing_amount, round(bids[-1]*(1 - self.aggressive), 2)
                     
             else:
+
                 if self.missing_amount > 0:
                     if self.missing_direction == 1:
                         return 'long', self.missing_amount, round(asks[-1]*(1 + self.aggressive), 2)
                     else:
                         return 'short', self.missing_amount, round(bids[-1]*(1 - self.aggressive), 2)
+                
+                else:
+                    return None, None, None

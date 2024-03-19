@@ -62,6 +62,9 @@ class abmodel(mesa.Model):
                     model_reporters[f'growth_rate'] = lambda m: tuple([agent.growth_rate for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])                                                       
                     model_reporters[f'target_interest_rate'] = lambda m: tuple([agent.target_interest_rate for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])                                                       
                     model_reporters[f'target_inflation_rate'] = lambda m: tuple([agent.target_inflation_rate for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])
+                    model_reporters[f'currency_a'] = lambda m: tuple([agent.currencyA for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])
+                    model_reporters[f'currency_b'] = lambda m: tuple([agent.currencyB for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])
+                    model_reporters[f'lend'] = lambda m: tuple([agent.lend for agent in m.schedule.agents if isinstance(agent, self.all_agents.central_banks[0].agent)])
 
                     
                 if (agent_type.name == 'Local Bank') | (agent_type.name == 'International Bank'):
@@ -346,6 +349,7 @@ class abmodel(mesa.Model):
         # Interest rate check
         cb_a = 0
         cb_b = 0
+        
         for central_bank_type in self.all_agents.central_banks:
             central_banks_shuffle = self.randomise_agents(central_bank_type.agent)
             for central_bank in central_banks_shuffle:
@@ -366,9 +370,13 @@ class abmodel(mesa.Model):
                     country_of_corporate = "A"
                 elif (cb_b < 0):
                     country_of_corporate = "B"
+                else:
+                    country_of_corporate  = str(np.random.choice(corporate_type.params.country, p=[0.9, 0.1]))
+                    print(country_of_corporate)
 
                 for i in range(random.randint(10, int(corporate_type.params.init_population * 0.1))):
-                    print(country_of_corporate)
+
+                    # print(country_of_corporate)
                     agent_corporate = tools.random_corporate(new_agent_id, corporate_type, self.static_map, self, country_of_corporate)
                     self.grid.place_agent(agent_corporate, agent_corporate.pos)
                     self.schedule.add(agent_corporate)
