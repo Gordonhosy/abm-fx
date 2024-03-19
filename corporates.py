@@ -109,6 +109,7 @@ class agent_corporate_v0(mesa.Agent):
             self.limit += 1
         else:
             final_decision = options[0] # random choice if more than one max
+            self.limit = 0
         
         # 4. Move agent
         self.model.grid.move_agent(self, final_decision)
