@@ -8,7 +8,7 @@ from plotly.subplots import make_subplots
 
 # tools for model
 
-def random_corporate(agent_id, corporate_type, static_map, model):
+def random_corporate(agent_id, corporate_type, static_map, model, country=None):
     '''
     generate random corporates at random postitions
     '''
@@ -23,8 +23,11 @@ def random_corporate(agent_id, corporate_type, static_map, model):
     # shuffle_index_len = len(non_zero_index[0])
     # random_pos_index = np.random.randint(0, shuffle_index_len, size=1)
 
-
-    country = str(np.random.choice(corporate_type.params.country, p=[0.9, 0.1]))
+    if country == None:
+        country = str(np.random.choice(corporate_type.params.country, p=[0.9, 0.1]))
+    else:
+        country = country
+    
     if (country == "A"):
         non_zero_index = np.nonzero(map_a)
         shuffle_index_len = len(non_zero_index[0])

@@ -240,6 +240,12 @@ class agent_central_bank_v0(mesa.Agent):
 
             self.growth_rate = self.growth_rate - 0.002 * np.random.normal(1, 1)
             # self.inflation_rate = self.inflation_rate - 0.002 * np.random.normal(1, 1)
+
+    def get_interest_rate(self):
+        return self.interest_rate
+    
+    def get_country(self):
+        return self.country
         
         
         

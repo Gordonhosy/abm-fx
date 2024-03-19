@@ -485,7 +485,7 @@ class agent_bank(mesa.Agent):
         self.bid_book, self.ask_book = self.calc_bid_ask()
 
     def increase_costs(self, value_a = 0.5, value_b = 0.5):
-        print("Increasing costs...")
+        # print("Increasing costs...")
         self.cost_currencyA += value_a
         self.cost_currencyB += value_b   
     

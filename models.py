@@ -343,6 +343,17 @@ class abmodel(mesa.Model):
          # After an amount of bankruptcies, new corporates spawn
         number_of_corps = len([a.unique_id for a in self.schedule.agents_by_type[self.all_agents.corporates[0].agent].values()])
 
+        # Interest rate check
+        cb_a = 0
+        cb_b = 0
+        for central_bank_type in self.all_agents.central_banks:
+            central_banks_shuffle = self.randomise_agents(central_bank_type.agent)
+            for central_bank in central_banks_shuffle:
+                if central_bank.get_country() == "A":
+                    cb_a = central_bank.get_interest_rate()
+                else:
+                    cb_b = central_bank.get_interest_rate()
+
         for corporate_type in self.all_agents.corporates:
             if number_of_corps < corporate_type.params.init_population * 0.95:
                 # assume only one corporate type can respawn now, and speculators are the last agent to be initialised
@@ -351,12 +362,17 @@ class abmodel(mesa.Model):
                 else:
                     new_agent_id = max(self.speculator_details.all_ids()) + 1
 
+                if (cb_a < 0):
+                    country_of_corporate = "A"
+                elif (cb_b < 0):
+                    country_of_corporate = "B"
+
                 for i in range(random.randint(10, int(corporate_type.params.init_population * 0.1))):
-                    agent_corporate = tools.random_corporate(new_agent_id, corporate_type, self.static_map, self)
+                    print(country_of_corporate)
+                    agent_corporate = tools.random_corporate(new_agent_id, corporate_type, self.static_map, self, country_of_corporate)
                     self.grid.place_agent(agent_corporate, agent_corporate.pos)
                     self.schedule.add(agent_corporate)
                     new_agent_id += 1
-        
     
     def run_model(self, steps = 1000):
         '''
