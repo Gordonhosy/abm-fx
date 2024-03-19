@@ -24,7 +24,7 @@ def random_corporate(agent_id, corporate_type, static_map, model):
     # random_pos_index = np.random.randint(0, shuffle_index_len, size=1)
 
 
-    country = str(np.random.choice(corporate_type.params.country))
+    country = str(np.random.choice(corporate_type.params.country, p=[0.9, 0.1]))
     if (country == "A"):
         non_zero_index = np.nonzero(map_a)
         shuffle_index_len = len(non_zero_index[0])
