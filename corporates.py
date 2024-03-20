@@ -3,6 +3,7 @@ from resources import *
 import numpy as np
 import random
 import math
+import pandas as pd
 
 class agent_corporate_v0(mesa.Agent):
     '''
@@ -35,6 +36,14 @@ class agent_corporate_v0(mesa.Agent):
         self.utilities = imp_utility
         self.improve_utility = np.random.choice(self.utilities)
         self.limit = 0
+
+        # select the map:
+        if self.country == "A":
+            possible = pd.read_excel(r"../ABM_FX/geographic_data/MAP.xlsx", sheet_name = "US_MAP").values
+        elif self.country == "B":
+            possible = pd.read_excel(r"../ABM_FX/geographic_data/MAP.xlsx", sheet_name = "JP_MAP").values
+        
+        self.possible_moves = np.nonzero(possible)
     
     def is_occupied(self, pos):
         '''
@@ -88,18 +97,25 @@ class agent_corporate_v0(mesa.Agent):
         '''
         Corporate moves according to 4 steps
         '''
-        
         # 1. Identify available neighbors
-        
-        neighbors_available = [i for i in self.model.grid.get_neighborhood(self.pos, self.moore, True, self.vision)\
+        neighbors_unoccupied = [i for i in self.model.grid.get_neighborhood(self.pos, self.moore, True, self.vision)\
                     if not self.is_occupied(i)]
+        
+        # 1.b Remove out of map positions
+        neighbors_available = []
+        for loc in neighbors_unoccupied:
+            if (loc[0] in self.possible_moves[0]) and (loc[1] in self.possible_moves[1]):
+                neighbors_available.append(loc)
+            else:
+                continue
 
         # 2. Calculate utitlities
         utilities = [self.calculate_utility(self.currencyA + self.get_currency_amount(pos, currencyA_basic), \
                         self.currencyB + self.get_currency_amount(pos, currencyB_basic)) for pos in neighbors_available]
 
         # 3. Find the best cell to move to
-        options = [neighbors_available[i] for i in np.argwhere(utilities == np.amax(utilities)).flatten()] 
+        options = [neighbors_available[i] for i in np.argwhere(utilities == np.amax(utilities)).flatten()]
+
         if len(options) == 0:
             print(self.unique_id)
         random.shuffle(options)
