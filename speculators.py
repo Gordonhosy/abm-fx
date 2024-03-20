@@ -76,8 +76,8 @@ class agent_speculator(mesa.Agent):
         '''
         Function for randomising moving average related strategies
         '''
-        ma = [(1, 5), (3, 10), (5, 20), (10, 60)] #, (20, 120)
-        sd = [0.5, 1, 1.25] #, 1.5, 2
+        ma = [(1, 5), (3, 10), (5, 20), (10, 60)]
+        sd = [0.5, 1, 1.25]
         return random.choice(ma), random.choice(sd)
     
     def adjust_aggressiveness(self):
@@ -217,23 +217,17 @@ class agent_speculator(mesa.Agent):
         interest_rate = [agent.interest_rate for agent in central_bank]
         self.currencyA += -self.borrowA * interest_rate[0] / 252 # fed fund rate is overnight rate, do we need to annualized this?
         self.currencyB += -self.borrowB * interest_rate[1] / 252
-        central_bank[0].currencyA += self.borrowA * interest_rate[0] / 252 ### need to change attribute name ###
-        central_bank[1].currencyB += self.borrowB * interest_rate[1] / 252 ### need to change attribute name ###
-
-
-        # see if there are trading opportunities
-        ir_diff = interest_rate[0] - interest_rate[1]
-        bids, asks = model.bank_details.top_of_book()
+        central_bank[0].currencyA += self.borrowA * interest_rate[0] / 252 
+        central_bank[1].currencyB += self.borrowB * interest_rate[1] / 252 
         
-        # update mid price if the top bid/ask is not None, otherwise mid price stay the same
-        if bids[-1] != None:
-            last_mid = (bids[-1] + asks[-1])/2
-
-        if step == 0:
+        if step <= 1:
             return None, None, None
 
         else:
-
+            # see if there are trading opportunities
+            ir_diff = interest_rate[0] - interest_rate[1]
+            bids, asks = model.bank_details.top_of_book()
+            last_mid = (bids[-1] + asks[-1]) / 2
             if ir_diff > 0.01:
                 # sizing
                 target_position = ir_diff * 10 * (self.currencyA + (self.currencyB/last_mid)) # amount in terms of currency A
@@ -243,13 +237,13 @@ class agent_speculator(mesa.Agent):
                     # borrow currency B from central bank B
                     add_borrow = int(target_in_B - self.borrowB)
                     self.borrowB += add_borrow
-                    central_bank[1].currencyB -= add_borrow ### need to change attribute name ###
-                    central_bank[1].lend += add_borrow ### need to change attribute name ###
+                    central_bank[1].currencyB -= add_borrow 
+                    central_bank[1].lend += add_borrow 
                     
                     # buy treasury in currency A from central bank A
                     self.borrowA -= int(add_borrow/last_mid) # negative borrow means lend
-                    central_bank[0].currencyA += int(add_borrow/last_mid) ### need to change attribute name ###
-                    central_bank[0].lend -= int(add_borrow/last_mid) ### need to change attribute name ###
+                    central_bank[0].currencyA += int(add_borrow/last_mid) 
+                    central_bank[0].lend -= int(add_borrow/last_mid) 
                     
                     total_amount = int(add_borrow/last_mid) + self.missing_direction * self.missing_amount
                     self.amount_placed = total_amount
@@ -260,12 +254,12 @@ class agent_speculator(mesa.Agent):
                 elif target_in_B/self.borrowB < 0.8:
                     reduce_borrow = int(self.borrowB - target_in_B)
                     self.borrowB -= reduce_borrow
-                    central_bank[1].currencyB += reduce_borrow ### need to change attribute name ###
-                    central_bank[1].lend -= reduce_borrow ### need to change attribute name ###
+                    central_bank[1].currencyB += reduce_borrow 
+                    central_bank[1].lend -= reduce_borrow 
                     
                     self.borrowA += int(reduce_borrow/last_mid) # negative borrow means lend
-                    central_bank[0].currencyA -= int(reduce_borrow/last_mid) ### need to change attribute name ###
-                    central_bank[0].lend += int(reduce_borrow/last_mid) ### need to change attribute name ###
+                    central_bank[0].currencyA -= int(reduce_borrow/last_mid) 
+                    central_bank[0].lend += int(reduce_borrow/last_mid) 
                     
                     total_amount = int(reduce_borrow/last_mid) - self.missing_direction * self.missing_amount
                     self.amount_placed = total_amount
@@ -275,6 +269,7 @@ class agent_speculator(mesa.Agent):
                     
                 else:
                     if self.missing_amount > 0:
+                        self.amount_placed = self.missing_amount
                         if self.missing_direction == 1:
                             return 'long', self.missing_amount, round(asks[-1]*(1 + self.aggressive), 2)
                         else:
@@ -293,13 +288,13 @@ class agent_speculator(mesa.Agent):
                     # borrow currency A from central bank A
                     add_borrow = int(target_in_A - self.borrowA)
                     self.borrowA += add_borrow
-                    central_bank[0].currencyA -= add_borrow ### need to change attribute name ###
-                    central_bank[0].lend += add_borrow ### need to change attribute name ###
+                    central_bank[0].currencyA -= add_borrow 
+                    central_bank[0].lend += add_borrow 
                     
                     # buy treasury in currency A from central bank A
                     self.borrowB -= int(add_borrow*last_mid) # negative borrow means lend
-                    central_bank[1].currencyB += int(add_borrow*last_mid) ### need to change attribute name ###
-                    central_bank[1].lend -= int(add_borrow*last_mid) ### need to change attribute name ###
+                    central_bank[1].currencyB += int(add_borrow*last_mid) 
+                    central_bank[1].lend -= int(add_borrow*last_mid) 
                     
                     total_amount = int(add_borrow*last_mid) - self.missing_direction * self.missing_amount
                     self.amount_placed = total_amount
@@ -309,12 +304,12 @@ class agent_speculator(mesa.Agent):
                 elif target_in_A/self.borrowA < 0.8:
                     reduce_borrow = int(self.borrowA - target_in_A)
                     self.borrowA -= reduce_borrow
-                    central_bank[0].currencyA += reduce_borrow ### need to change attribute name ###
-                    central_bank[0].lend -= reduce_borrow ### need to change attribute name ###
+                    central_bank[0].currencyA += reduce_borrow 
+                    central_bank[0].lend -= reduce_borrow 
                     
                     self.borrowB += int(reduce_borrow*last_mid) # negative borrow means lend
-                    central_bank[1].currencyB -= int(reduce_borrow*last_mid) ### need to change attribute name ###
-                    central_bank[1].lend += int(reduce_borrow*last_mid) ### need to change attribute name ###
+                    central_bank[1].currencyB -= int(reduce_borrow*last_mid) 
+                    central_bank[1].lend += int(reduce_borrow*last_mid) 
                     
                     total_amount = int(reduce_borrow*last_mid) + self.missing_direction * self.missing_amount
                     self.amount_placed = total_amount
@@ -323,6 +318,7 @@ class agent_speculator(mesa.Agent):
                     
                 else:
                     if self.missing_amount > 0:
+                        self.amount_placed = self.missing_amount
                         if self.missing_direction == 1:
                             return 'long', self.missing_amount, round(asks[-1]*(1 + self.aggressive), 2)
                         else:
@@ -331,6 +327,7 @@ class agent_speculator(mesa.Agent):
             else:
 
                 if self.missing_amount > 0:
+                    self.amount_placed = self.missing_amount
                     if self.missing_direction == 1:
                         return 'long', self.missing_amount, round(asks[-1]*(1 + self.aggressive), 2)
                     else:

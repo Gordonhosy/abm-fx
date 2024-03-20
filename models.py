@@ -389,7 +389,6 @@ class abmodel(mesa.Model):
         for _ in range(steps):
             self.step()
         
-    ##### need to think of how to generalise this, or maybe just dont record this #####
     def get_trade_partners(self, agent):
         '''
         ### THIS IS ONLY FOR CORPORATE V0 ###
