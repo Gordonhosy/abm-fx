@@ -9,6 +9,7 @@ from static import *
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from tqdm import tqdm
 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -164,6 +165,7 @@ class abmodel(mesa.Model):
         #self.international_bank_details = self.international_bank_class(self)
         self.arbitrager_details = self.arbitrager_class(self)
         self.speculator_details = self.speculator_class(self)
+        self.last_agent_id = agent_id
         
     def geometric_mean(self, listoflist):
         '''
@@ -233,11 +235,13 @@ class abmodel(mesa.Model):
         self.speculator_details.update_ex_trades(self, self.schedule.steps + 1)
             
         # banks
+        '''
         bank_value = [self.bank_details.by_step(i)['Firm Value'].mean() / 10 for i in range(self.schedule.steps)]
         try:
             bank_value = bank_value[-1]
         except:
             bank_value = 0
+        '''
 
         for bank_type in self.all_agents.banks:
             banks_shuffle = self.randomise_agents(bank_type.agent)
@@ -253,6 +257,7 @@ class abmodel(mesa.Model):
                 bank.arbed_amount = []
                 bank.trade_with_corps_funds()
 
+                '''
                 if (bank_value < 1000):
                     self.direction.append(1)
                 elif (1000 < bank_value < 2000):
@@ -294,6 +299,7 @@ class abmodel(mesa.Model):
                     else:
                         bank.increase_costs(-15,-15)
                     self.milestone = False
+                    '''
             
             banks_shuffle = self.randomise_agents(bank_type.agent)
             for bank in banks_shuffle:
@@ -360,33 +366,28 @@ class abmodel(mesa.Model):
 
         for corporate_type in self.all_agents.corporates:
             if number_of_corps < corporate_type.params.init_population * 0.95:
-                # assume only one corporate type can respawn now, and speculators are the last agent to be initialised
-                if self.corporate_details.all_ids()[-1] > self.speculator_details.all_ids()[-1]:
-                    new_agent_id = max(self.corporate_details.all_ids()) + 1
-                else:
-                    new_agent_id = max(self.speculator_details.all_ids()) + 1
-
+                
                 if (cb_a < 0):
                     country_of_corporate = "A"
                 elif (cb_b < 0):
                     country_of_corporate = "B"
                 else:
-                    country_of_corporate  = str(np.random.choice(corporate_type.params.country, p=[0.9, 0.1]))
+                    country_of_corporate  = str(np.random.choice(corporate_type.params.country, p=[0.88, 0.12]))
                     print(country_of_corporate)
 
                 for i in range(random.randint(10, int(corporate_type.params.init_population * 0.1))):
 
                     # print(country_of_corporate)
-                    agent_corporate = tools.random_corporate(new_agent_id, corporate_type, self.static_map, self, country_of_corporate)
+                    agent_corporate = tools.random_corporate(self.last_agent_id + 1, corporate_type, self.static_map, self, country_of_corporate)
                     self.grid.place_agent(agent_corporate, agent_corporate.pos)
                     self.schedule.add(agent_corporate)
-                    new_agent_id += 1
+                    self.last_agent_id += 1
     
     def run_model(self, steps = 1000):
         '''
         helper function to run multiple steps
         '''
-        for _ in range(steps):
+        for _ in tqdm(range(steps)):
             self.step()
         
     def get_trade_partners(self, agent):
@@ -419,7 +420,7 @@ class abmodel(mesa.Model):
             self.agent_value = {} # denominated in currency A
             step = 0
             self.update_ex_trades(model, step)
-            self.update_trades(model, step, mid_price = 1)
+            self.update_trades(model, step, mid_price = 100)
     
             
         def update_ex_trades(self, model, step):
@@ -563,7 +564,7 @@ class abmodel(mesa.Model):
             self.agent_bid_book[step] = [a.bid_book for a in model.schedule.agents_by_type[self.agent_type].values()]
             self.agent_ask_book[step] = [a.ask_book for a in model.schedule.agents_by_type[self.agent_type].values()]
             if step == 0:
-                mid_price = 1
+                mid_price = 100
             else:
                 mid_price = self.mid_price(step)
             self.agent_value[step] = [a + (b/mid_price) for a, b in zip(self.agent_currencyA[step], self.agent_currencyB[step])]
@@ -681,12 +682,26 @@ class abmodel(mesa.Model):
             Return a plot of the limit order book
             '''
             interbank_bid, interbank_ask = self.lob(step)
+            
+            interbank_bid_round = {}
+            for key, value in interbank_bid.items():
+                if round(key,1) in interbank_bid_round:
+                    interbank_bid_round[round(key,1)] += value
+                else:
+                    interbank_bid_round[round(key,1)] = value
+            
+            interbank_ask_round = {}
+            for key, value in interbank_ask.items():
+                if round(key,1) in interbank_ask_round:
+                    interbank_ask_round[round(key,1)] += value
+                else:
+                    interbank_ask_round[round(key,1)] = value
 
             # ----- Plotly Version ------
             fig = make_subplots(rows=1, cols=1)
             temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
-            bid_price = go.Bar(x = list(interbank_bid.keys()), y = list(interbank_bid.values()), name = 'Bid', marker = dict(color = 'darkblue'))
-            ask_price = go.Bar(x = list(interbank_ask.keys()), y = list(interbank_ask.values()), name = 'Ask', marker = dict(color = 'darkred'))
+            bid_price = go.Bar(x = list(interbank_bid_round.keys()), y = list(interbank_bid.values()), name = 'Bid', marker = dict(color = 'darkblue'))
+            ask_price = go.Bar(x = list(interbank_ask_round.keys()), y = list(interbank_ask.values()), name = 'Ask', marker = dict(color = 'darkred'))
 
             fig.add_trace(bid_price, row = 1, col = 1)
             fig.add_trace(ask_price, row = 1, col = 1)
@@ -870,7 +885,7 @@ class abmodel(mesa.Model):
             self.agent_ask_book = {}
             self.agent_value = {} # denominated in currency A
             step = 0
-            self.update(model, step, mid_price = 1)
+            self.update(model, step, mid_price = 100)
     
             
         def update(self, model, step, mid_price):
@@ -968,7 +983,7 @@ class abmodel(mesa.Model):
             self.agent_value = {} # denominated in currency A
             step = 0
             self.update_ex_trades(model, step)
-            self.update_trades(model, step, mid_price = 1)
+            self.update_trades(model, step, mid_price = 100)
     
             
         def update_ex_trades(self, model, step):

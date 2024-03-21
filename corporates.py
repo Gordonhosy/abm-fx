@@ -136,14 +136,15 @@ class agent_corporate_v0(mesa.Agent):
         Function for corporate to earn money each step
         '''
         contents = self.model.grid.get_cell_list_contents(self.pos)
+        factor = 0.5
         for obj in contents:
             if isinstance(obj, currencyA_basic):
-                self.currencyA += obj.amount
-                obj.amount -= obj.amount
+                self.currencyA += factor*obj.amount
+                obj.amount -= factor*obj.amount
                 
             if isinstance(obj, currencyB_basic):
-                self.currencyB += obj.amount
-                obj.amount -= obj.amount
+                self.currencyB += factor*obj.amount
+                obj.amount -= factor*obj.amount
         
         
     def pay_costs(self, interest_rate_a, interest_rate_b):

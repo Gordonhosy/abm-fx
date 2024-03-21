@@ -17,7 +17,7 @@ class currencyA_basic(mesa.Agent):
         '''
         Grows one currency per time step until it reaches maximum
         '''
-        self.amount = min([self.max_dollar, self.amount * (1 + growth_rate + 1)])
+        self.amount = min([self.max_dollar, self.amount * (1 + growth_rate)])
         
 
 class currencyB_basic(mesa.Agent):
@@ -30,11 +30,11 @@ class currencyB_basic(mesa.Agent):
     def __init__(self, agent_id, model, pos, max_dollar):
         super().__init__(agent_id, model)
         self.pos = pos
-        self.amount = max_dollar
-        self.max_dollar = max_dollar
+        self.amount = max_dollar * 100
+        self.max_dollar = max_dollar * 100
         
     def step(self, growth_rate):
         '''
         Grows one currency per time step until it reaches maximum
         '''
-        self.amount = min([self.max_dollar, self.amount * (1 + growth_rate + 1)])    
+        self.amount = min([self.max_dollar, self.amount * (1 + growth_rate)])    

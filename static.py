@@ -17,7 +17,7 @@ class all_agents():
         self.central_banks = [central_bank_v0()]
         self.banks = [local_bank()]
         self.arbitragers = [arbitrager()]
-        self.speculators = [speculator()]
+        self.speculators = [] #[speculator()]
 
         
 # This section is to specify a complete agent type from: agent type + parameters
@@ -84,10 +84,10 @@ class params_corporate_v0():
     def __init__(self):
         self.init_population = 200
         self.country = ["A", "B"]
-        self.asset_min = 75
-        self.asset_max = 100
-        self.costs_min = 1
-        self.costs_max = 5
+        self.asset_min = 400
+        self.asset_max = 800
+        self.costs_min = 15
+        self.costs_max = 25
         self.level_min = 1
         self.level_max = 5
         
@@ -106,14 +106,14 @@ class params_local_bank():
 
         self.init_pos = [(13,3), (3,3), (10,51), (23,44),  # US Bank 
                          (16, 67), (15, 71), (15, 67), (7,73)] # JP Bank
-        self.local_asset_min = 250
-        self.local_asset_max = 500
-        self.local_costs_min = 4
-        self.local_costs_max = 7
-        self.foreign_asset_min = 125
-        self.foreign_asset_max = 250
-        self.foreign_costs_min = 3
-        self.foreign_costs_max = 5
+        self.local_asset_min = 1200
+        self.local_asset_max = 2500
+        self.local_costs_min = 20
+        self.local_costs_max = 25
+        self.foreign_asset_min = 700
+        self.foreign_asset_max = 1200
+        self.foreign_costs_min = 15
+        self.foreign_costs_max = 20
         self.vision_min = 50
         self.vision_max = 50
         
@@ -140,8 +140,8 @@ class params_arbitrager():
     '''
     def __init__(self):
         self.init_pos = [(24,15), (24,35), (24, 50), (24, 75)]
-        self.asset_min = 100
-        self.asset_max = 100
+        self.asset_min = 3000
+        self.asset_max = 3000
         self.costs_min = 1
         self.costs_max = 2
         self.vision_min = 50
@@ -161,7 +161,6 @@ class params_speculator():
 
 
 # This section is to store maps in form of arrays      
-# TO DO: a better map
 class static_map_v0():
     '''
     A customed static map for init
@@ -174,8 +173,28 @@ class static_map_v0():
         self.width = us_map.shape[0]
         self.height = us_map.shape[1]
 
-        self.currencyA_map_init = us_map
-        self.currencyB_map_init = jp_map
+        adj_us_map = []
+        for i in range(us_map.shape[0]):
+            for j in range(us_map.shape[1]):
+                if j < 60:
+                    adj_us_map.append(us_map[i][j] * 10)
+                else:
+                    adj_us_map.append(us_map[i][j] * 2)
+        adj_us_map = np.array(adj_us_map).reshape(us_map.shape)
+                
+        
+        adj_jp_map = []
+        for i in range(us_map.shape[0]):
+            for j in range(us_map.shape[1]):
+                if j > 60:
+                    adj_jp_map.append(jp_map[i][j] * 6)
+                else:
+                    adj_jp_map.append(jp_map[i][j] * 0.7)
+        adj_jp_map = np.array(adj_jp_map).reshape(us_map.shape)
+                    
+            
+        self.currencyA_map_init = adj_us_map
+        self.currencyB_map_init = adj_jp_map
 
         # Original Version
         # self.width = 50

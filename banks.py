@@ -5,6 +5,7 @@ import random
 import math
 from corporates import *
 from speculators import *
+from scipy.stats.mstats import winsorize
 
 class agent_bank(mesa.Agent):
     '''
@@ -35,7 +36,7 @@ class agent_bank(mesa.Agent):
         self.arbed_prices = []
         self.arbed_desks = []
         self.arbed_amount = []
-        self.premium = 0.2
+        self.premium = 0.05
         self.bid_book = [] # list of tuples (price, volume)
         self.ask_book = []
 
@@ -442,7 +443,7 @@ class agent_bank(mesa.Agent):
         # calculate the combination of currency A and B that gives the same utility
         cost_total = self.cost_currencyA + self.cost_currencyB
         utility = self.currencyA**(self.cost_currencyA/cost_total) * (self.currencyB**(self.cost_currencyB/cost_total))
-        indiff_currencyA = np.arange(int(self.currencyA*0.8), int(self.currencyA*1.2))
+        indiff_currencyA = np.arange(int(self.currencyA*0.85), int(self.currencyA*1.15))
         indiff_currencyB = (utility/(indiff_currencyA**(self.cost_currencyA/cost_total)))**(cost_total/self.cost_currencyB)
         
         # add premium for banks to earn
@@ -464,6 +465,13 @@ class agent_bank(mesa.Agent):
                 else:
                     bid_book_dict[price] = 1
         
+        org_bid = list(bid_book_dict.keys())
+        
+        for price in [max(org_bid), min(org_bid)]:
+            if price in bid_book_dict:
+                del bid_book_dict[price]
+        
+        
         ask_book_dict = {}
         for idx, vwap in enumerate(indiff_ask):
             if idx == 0:
@@ -474,6 +482,12 @@ class agent_bank(mesa.Agent):
                     ask_book_dict[price] += 1
                 else:
                     ask_book_dict[price] = 1
+                    
+        org_ask = list(ask_book_dict.keys())
+        
+        for price in [max(org_ask), min(org_ask)]:
+            if price in ask_book_dict:
+                del ask_book_dict[price]
         
         return list(bid_book_dict.items()), list(ask_book_dict.items())
     

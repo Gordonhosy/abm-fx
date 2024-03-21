@@ -57,6 +57,7 @@ class agent_central_bank_v0(mesa.Agent):
         """
         
         self.calculate_target_interest_rate() # Recalculate the target interest in every steps.
+        return
         self.adjust_interest_rate() # Central bank observe the economic and response to it (cut, raise).
 
         self.economic_cycle() # macroeconomic policy is tightening/easing.
