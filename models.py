@@ -220,7 +220,7 @@ class abmodel(mesa.Model):
                 corporate.earn_money()
                 corporate.pay_costs(interest_rate_a = interest_rate[0], interest_rate_b =  interest_rate[1])
                 corporate.if_bankrupt()
-                corporate.put_order()
+                corporate.put_order(mid_price = self.bank_details.mid_price(self.schedule.steps))
         
         # hedege funds
         for speculator_type in self.all_agents.speculators:
@@ -744,6 +744,8 @@ class abmodel(mesa.Model):
             '''
             Return mid price as per available information
             '''
+            if step == 0:
+                return 100
             interbank_bid, interbank_ask = self.lob(step)
             bid = next(iter(sorted(interbank_bid.keys(), reverse = True)),None)
             ask = next(iter(sorted(interbank_ask.keys())),None)

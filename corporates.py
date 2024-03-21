@@ -164,7 +164,7 @@ class agent_corporate_v0(mesa.Agent):
             self.model.schedule.remove(self)
 
 
-    def put_order(self):
+    def put_order(self, mid_price):
         '''
         Function for corporates to put orders to trade FX
         The aim is to improve the utility by a certain amount
@@ -178,17 +178,31 @@ class agent_corporate_v0(mesa.Agent):
 
         uti = round(self.improve_utility, 2)
 
-        target_utility = self.calculate_utility(self.currencyA, self.currencyB) * uti
-        # target the equilibrium at the new utility
+        org_utility = self.calculate_utility(self.currencyA, self.currencyB)
+        target_utility = org_utility * uti
         cost_total = self.cost_currencyA + self.cost_currencyB
-        target_currencyA = ((self.cost_currencyB/self.cost_currencyA)*(target_utility**(-cost_total/self.cost_currencyB)))**(-1/(1+(self.cost_currencyA/self.cost_currencyB)))
-        target_currencyB = (target_utility/(target_currencyA**(self.cost_currencyA/cost_total)))**(cost_total/self.cost_currencyB)
+        org_slope = (org_utility ** (cost_total/self.cost_currencyB)) * (-self.cost_currencyA/self.cost_currencyB) * (self.currencyA**(-(self.cost_currencyA/self.cost_currencyB + 1)))
+        utility = org_utility
+        change_currencyA = 0
+        change_currencyB = 0
+        mid_price = np.random.normal(loc=100, scale=5, size=None)
         
-        change_currencyA = target_currencyA - self.currencyA
-        change_currencyB = target_currencyB - self.currencyB
-        
+        if org_slope < -1:
+            while ((utility < target_utility) & (abs(change_currencyB) < self.currencyB*0.5)):
+                change_currencyA += 1
+                change_currencyB -= mid_price
+                utility = self.calculate_utility(self.currencyA + change_currencyA, self.currencyB + change_currencyB)
+                
+        else:
+            while ((utility < target_utility) & (abs(change_currencyA) < self.currencyA*0.5)):
+                change_currencyA -= 1
+                change_currencyB += mid_price
+                utility = self.calculate_utility(self.currencyA + change_currencyA, self.currencyB + change_currencyB)
+                
+       
         # the changes need to be in opposite directions for a trade to happen
-        if (change_currencyA * change_currencyB < 0) & (not math.isclose(change_currencyA, 0)):
+        # if (change_currencyA * change_currencyB < 0) & (not math.isclose(change_currencyA, 0)):
+        if utility > target_utility:
             
             if change_currencyA < 0:
                 self.trade_direction = 'short'
