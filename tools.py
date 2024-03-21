@@ -98,8 +98,8 @@ def central_bank_A(agent_id, central_bank_type, static_map, model):
     y = int(np.random.uniform(0, static_map.height))
     country = "A"
 
-    inflation_rate = 0#0.04
-    interest_rate = 0#0.0025
+    inflation_rate = 0 #0.04
+    interest_rate = 0 #0.0025
     growth_rate = interest_rate - inflation_rate 
     target_inflation_rate = 0.02
     currencyA = 1000000
@@ -130,8 +130,8 @@ def central_bank_B(agent_id, central_bank_type, static_map, model):
     y = int(np.random.uniform(0, static_map.height))
     country = "B"
 
-    inflation_rate = 0#0.01
-    interest_rate = 0#-0.0025
+    inflation_rate = 0 #0.01
+    interest_rate = 0 #-0.0025
     growth_rate = interest_rate - inflation_rate 
     target_inflation_rate = 0.015
     currencyA = 0
@@ -236,6 +236,81 @@ def random_fund(agent_id, fund_type, init_pos, strategy, model):
 
 
 # ---------------- Visualization Tools --------------------
+import datetime as dt
+import yfinance as yf 
+from fredapi import Fred 
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+from statsmodels.graphics.tsaplots import plot_acf
+
+
+# yfinance likes the tickers formatted as a list
+api_key = 'a0aee094a9b908bd7c16baece8df8419'
+start_date = dt.datetime(2000,1,1)
+end_date =  dt.datetime(2024,1,1)
+
+
+def get_price_df(model, model_results, steps):
+
+    best_bid = []
+    best_ask = []
+    mid_price = []
+
+
+    for i in range(steps):
+
+        interbank_bid, interbank_ask = model.bank_details.lob(step = i)
+
+        try:
+            best_bid_price = np.sort(list(interbank_bid.keys()))[-1]
+        except:
+            best_bid_price = np.NaN
+        
+        try:
+            best_ask_price = np.sort(list(interbank_ask.keys()))[0]
+        except:
+            best_ask_price = np.NaN
+
+        best_bid.append(best_bid_price)
+        best_ask.append(best_ask_price)
+        mid_price.append((best_bid_price + best_ask_price)/2)
+
+
+
+    interest_rate_1_data, interest_rate_2_data = zip(*model_results['interest_rate'].values)
+
+    price_df = pd.DataFrame()
+    price_df['time_steps'] = np.arange(1, steps +1)
+    price_df['Ask(1)'] = best_ask
+    price_df['Bid(1)'] = best_bid
+    price_df['Mid Price'] = mid_price
+
+    price_df['interest_rate_1'] = interest_rate_1_data
+    price_df['interest_rate_2'] = interest_rate_2_data
+    price_df['interest_rate_diff'] = price_df['interest_rate_1'] - price_df['interest_rate_2']
+    price_df['return_mid_price'] = np.log(price_df['Mid Price']).diff()
+
+    return price_df
+
+def get_market_data(start_date, end_date, api_key):
+
+    yahoo_df = yf.download("JPY=X", start = start_date, end = end_date, interval='1d')
+    fred = Fred(api_key = api_key)
+
+    fed_rate = fred.get_series('DFF').reset_index(name = 'fed fund effective rate')
+    jp_rate = fred.get_series('IRSTCI01JPM156N').reset_index(name = 'BOJ effective rate')
+    interest_rate_df = pd.merge(fed_rate, jp_rate)
+    interest_rate_df['interest_rate_diff'] = interest_rate_df['fed fund effective rate'] - interest_rate_df['BOJ effective rate'] 
+
+    # yahoo_df = pd.merge(yahoo_df, interest_rate_df, left_index=True, right_on='index')
+    yahoo_df['return'] = np.log(yahoo_df['Close']).diff(1)
+
+    merge_df = pd.merge(yahoo_df, interest_rate_df, left_index = True, right_on = 'index')
+
+    return yahoo_df, interest_rate_df, merge_df
+
+
 
 def plot_central_bank(model_results):
 
@@ -476,28 +551,29 @@ def corporate_value_and_interest_rate_plot(model, model_results, steps):
     corporate_value = [model.corporate_details.by_step(i)['Firm Value'].mean() for i in range(steps)]
     interest_rate_1_data, interest_rate_2_data = zip(*model_results['interest_rate'].values)
 
+
     fig = make_subplots(rows=1, cols=1, specs=[[{"secondary_y": True}]])
 
     temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
-    interest_rate_1 = go.Bar(x = steps_data, y = interest_rate_1_data, name = 'Interest Rate(1)', marker = dict(color = 'green', opacity = 0.6))
-    interest_rate_2 = go.Bar(x = steps_data, y = interest_rate_2_data, name = 'Interest Rate(2)', marker = dict(color = 'grey',  opacity = 0.6))
-    corporate_value_line = go.Scatter(x = steps_data, y = corporate_value, name = 'corporate value')
+    interest_rate_1 = go.Scatter(x = steps_data, y = interest_rate_1_data, name = 'Interest Rate(1)', line = dict(color = 'green'))
+    interest_rate_2 = go.Scatter(x = steps_data, y = interest_rate_2_data, name = 'Interest Rate(2)', line = dict(color = 'grey'))
+    corporate_value_line = go.Scatter(x = steps_data, y = corporate_value, name = 'corporate value', line = dict(color = 'blue'))
 
     fig.add_trace(corporate_value_line, row = 1, col =1, secondary_y='True')
     fig.add_trace(interest_rate_1, row = 1, col = 1)
     fig.add_trace(interest_rate_2, row = 1, col = 1)
 
 
-
     fig.update_layout(template = temp,
-                    hovermode = 'closest',
-                    margin = dict(l = 30, r = 20, t = 50, b = 20),
-                    height = 400, 
-                    width = 600, 
-                    showlegend = True,
-                    xaxis = dict(tickfont=dict(size=10)),  
-                    yaxis = dict(side = "left", tickfont = dict(size=10)),
-                    legend = dict(yanchor = "bottom", y = 1, xanchor = "left", x = 0.01,  orientation="h"))
+                      title = "Corporate Agent Value",
+                      hovermode = 'closest',
+                      margin = dict(l = 30, r = 30, t = 50, b = 20),
+                      height = 400, 
+                      width = 800, 
+                      showlegend = True,
+                      xaxis = dict(title = 'Steps', tickfont = dict(size=10)),
+                      yaxis = dict(title = 'Value', side="left", tickfont = dict(size=10)),
+                      legend = dict(yanchor = "bottom", y = 0.95, xanchor = "left", x = 0.01,  orientation="h"))
 
     return fig 
 
@@ -505,6 +581,8 @@ def bank_value_and_interest_rate_plot(model, model_results, steps):
 
     steps_data = model_results['Step'].values
     bank_value = [model.bank_details.by_step(i)['Firm Value'].mean() / 10 for i in range(steps)]
+    traded_volume = model_results['(Corporate V0)'].values
+    corporate_value = [model.corporate_details.by_step(i)['Firm Value'].mean() for i in range(steps)]
     interest_rate_1_data, interest_rate_2_data = zip(*model_results['interest_rate'].values)
 
     fig = make_subplots(rows=1, cols=1, specs=[[{"secondary_y": True}]])
@@ -513,21 +591,228 @@ def bank_value_and_interest_rate_plot(model, model_results, steps):
     interest_rate_1 = go.Bar(x = steps_data, y = interest_rate_1_data, name = 'Interest Rate(1)', marker = dict(color = 'green', opacity = 0.6))
     interest_rate_2 = go.Bar(x = steps_data, y = interest_rate_2_data, name = 'Interest Rate(2)', marker = dict(color = 'grey',  opacity = 0.6))
     bank_value_line = go.Scatter(x = steps_data, y = bank_value, name = 'bank value', line = dict(color = 'red'))
+    corporate_value_line = go.Scatter(x = steps_data, y = corporate_value, name = 'corporate value', line = dict(color = 'blue'))
+    # traded_volume_line = go.Scatter(x = steps_data, y = traded_volume, name = 'traded volume', line = dict(color = 'orange'))
 
-    fig.add_trace(bank_value_line, row = 1, col =1, secondary_y='True')
-    fig.add_trace(interest_rate_1, row = 1, col = 1)
-    fig.add_trace(interest_rate_2, row = 1, col = 1)
-
+    fig.add_trace(bank_value_line, row = 1, col = 1, secondary_y='True')
+    fig.add_trace(corporate_value_line, row = 1, col = 1)
+    # fig.add_trace(traded_volume_line, row = 1, col= 1)
+    # fig.add_trace(interest_rate_1, row = 1, col = 1)
+    # fig.add_trace(interest_rate_2, row = 1, col = 1)
 
 
     fig.update_layout(template = temp,
-                hovermode = 'closest',
-                margin = dict(l = 30, r = 20, t = 50, b = 20),
-                height = 400, 
-                width = 600, 
-                showlegend = True,
-                xaxis = dict(tickfont=dict(size=10)),  
-                yaxis = dict(side = "left", tickfont = dict(size=10)),
-                legend = dict(yanchor = "bottom", y = 1, xanchor = "left", x = 0.01,  orientation="h"))
+                      title = "Bank Agent Value",
+                      hovermode = 'closest',
+                      margin = dict(l = 30, r = 30, t = 50, b = 20),
+                      height = 400, 
+                      width = 800, 
+                      showlegend = True,
+                      xaxis = dict(title = 'Steps', tickfont = dict(size=10)),
+                      yaxis = dict(title = 'Value', side="left", tickfont = dict(size=10)),
+                      legend = dict(yanchor = "bottom", y = 1, xanchor = "left", x = 0.01,  orientation="h"))
+
+    return fig 
+
+
+def plot_volatility_clustering(price_df, yahoo_df):
+
+  fig = make_subplots(rows = 2, cols = 2, subplot_titles = ['Real Market Data', 'Simulation Result'])
+  temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
+
+
+  daily_price_line = go.Scatter(x = yahoo_df.index, y = yahoo_df['Close'], name = 'Spot Rate')
+  daily_return_line = go.Scatter(x = yahoo_df.index, y = yahoo_df['return'], name = 'Daily Return')
+
+  simulation_price_line = go.Scatter(x = price_df['time_steps'], y = price_df['Mid Price'], name = 'simulation min price', line = dict(color = ' black'))
+  simulation_return_line = go.Scatter(x = price_df['time_steps'], y = price_df['return_mid_price'], name = 'simulation mid  price return', line = dict(color = 'gray'))
+
+  fig.update_layout(title_text = 'Stylized Fact - Volatility Clustering', showlegend=True)
+  fig.add_trace(daily_price_line, row = 1, col = 1)
+  fig.add_trace(daily_return_line, row = 2, col = 1)
+  fig.add_trace(simulation_price_line, row = 1, col = 2)
+  fig.add_trace(simulation_return_line, row = 2, col = 2)
+
+
+  fig.update_layout(template = temp,
+                      hovermode = 'closest',
+                        margin = dict(l = 40, r = 40, t = 60, b = 40),
+                        height = 500, 
+                        width = 1200, 
+                        showlegend = True,
+                        xaxis = dict(tickfont=dict(size=10)),  
+                        yaxis = dict(side = "left", tickfont = dict(size=10)),
+                        xaxis_showgrid = False, 
+                        legend = dict(yanchor = "bottom", y = 0.45, xanchor = "left", x = 0.01,  orientation="h"))
+
+  return fig
+
+
+def plot_fat_tail(yahoo_df, price_df):
+
+    # Calculate mean and standard deviation
+    mu, sigma = yahoo_df['return'].mean(), yahoo_df['return'].std()
+    simulated_mu, simulated_sigma = yahoo_df['return'].mean(), yahoo_df['return'].std()
+
+    # hist_fig = go.Figure()
+    hist_fig = make_subplots(rows = 1, cols = 2, subplot_titles = ['Real Market Data', 'Simulation Result'])
+    temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
+
+    daily_return_histogram = go.Histogram(x = (yahoo_df['return']- mu) / sigma, 
+                                        nbinsx = 200, 
+                                        histnorm = 'density', 
+                                        marker_color = 'rgba(0, 128, 0, 0.6)',
+                                        name = 'USD/JPY Daily Return')
+
+    simulation_return_histogram = go.Histogram(x = (price_df['return_mid_price'] - simulated_mu)/simulated_sigma, 
+                                                nbinsx = 200, 
+                                                histnorm = 'density', 
+                                                marker_color = 'rgba(0, 128, 0, 0.6)',
+                                                name = 'USD/JPY Simulation Daily Return')
+
+
+    # Plot the normal distribution
+    x = np.linspace(-5, 5, 1000)
+    y = norm.pdf(x, 0, 1) * 4000 # Standard normal distribution
+    y2 = norm.pdf(x, 0, 1) * 300
+
+    normal_distribution_trace = go.Scatter(x = x, y = y, mode='lines', line=dict(color='black', width=2), name = 'Normal Distribution')
+    simulated_normal_distribution_trace = go.Scatter(x = x, y = y2, mode='lines', line=dict(color='black', width=2), name = 'Normal Distribution')
+
+
+    # Add histogram trace
+    hist_fig.add_trace(daily_return_histogram, row = 1, col = 1)
+    hist_fig.add_trace(normal_distribution_trace, row = 1, col = 1)
+    hist_fig.add_trace(simulation_return_histogram, row = 1, col = 2)
+    hist_fig.add_trace(simulated_normal_distribution_trace, row = 1, col = 2)
+
+
+    hist_fig.update_layout(template = temp,
+                        title = 'Stylized Fact - Fat Tail',
+                        hovermode = 'closest',
+                        xaxis_title='Return Mid Price (Normalized)',
+                        yaxis_title='Density',
+                        bargap = 0.05,
+                        margin = dict(l = 40, r = 40, t = 50, b = 40),
+                        height = 600, 
+                        width = 1000, 
+                        showlegend = True,
+                        xaxis = dict(tickfont=dict(size=10), range=[-8, 8]),  
+                        xaxis2 = dict(tickfont=dict(size=10), range=[-8, 8]),  
+                        yaxis = dict(side = "left", tickfont = dict(size=10)),
+                        xaxis_showgrid = False, 
+                        legend = dict(yanchor = "bottom", y = 0.95, xanchor = "left", x = 0.01,  orientation = "h"))
+    
+    return hist_fig
+
+
+def plot_autocorrelation(yahoo_df, price_df):
+
+    return_data = yahoo_df['return'].dropna()
+    simulated_return_data = price_df['return_mid_price'].dropna()
+
+    # Create ACF plot
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (12, 5))
+
+    fig.suptitle('Stylized Fact - No Serial Autocorrelation', fontweight = 'bold', fontsize = 12) # set title
+    plot_acf(return_data, ax = ax1, lags = 40)  # Adjust lags as needed
+    plot_acf(simulated_return_data, ax = ax2, lags = 40)  # Adjust lags as needed
+
+    ax1.set_title('Real Market ACF Plot')
+    ax2.set_title('Simulated Data ACF Plot')
+    ax1.set_xlabel('Lag')
+    ax2.set_xlabel('Lag')
+    ax1.set_ylabel('Autocorrelation')
+
+    return fig 
+
+def plot_interest_rate_and_price(merge_df, price_df):
+
+    # Create subplots with one row and one column
+    fig = make_subplots(rows=1, cols=2, specs=[[{'secondary_y': True}, {'secondary_y': True}]], subplot_titles = ['Real Market Data', 'Simulation Result'])
+    temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
+
+    # Define your traces
+    daily_price_line = go.Scatter(x = merge_df.index, y = merge_df['Close'], name = 'Monthly Spot Rate')
+    interest_rate_diff_line = go.Scatter(x = merge_df.index, y = merge_df['interest_rate_diff'], name = 'Interest Rate Diff', line = dict(color = ' red'))
+
+    simulated_price_line = go.Scatter(x = price_df['time_steps'], y = price_df['Mid Price'], name = 'Simulated Mid Price', line = dict(color = 'black'))
+    simulated_interest_rate_diff_line = go.Scatter(x = price_df['time_steps'], y = price_df['interest_rate_diff'], name = 'Simulated Interest Rate Difference')
+
+    # Add trace1 to the subplot
+    fig.add_trace(daily_price_line, col = 1, row = 1)
+    fig.add_trace(interest_rate_diff_line, secondary_y=True, col = 1, row = 1)
+
+    fig.add_trace(simulated_price_line, col = 2, row = 1)
+    fig.add_trace(simulated_interest_rate_diff_line, secondary_y=True, col = 2, row = 1)
+
+    fig.update_layout(template = temp,
+                    title = 'Stylized Fact - Interest Rate & Spot Rate',
+                    hovermode = 'closest',
+                    margin = dict(l = 40, r = 40, t = 60, b = 40),
+                    height = 500, 
+                    width = 1200, 
+                    showlegend = True,
+                    xaxis = dict(tickfont=dict(size=10)),  
+                    yaxis = dict(side = "left", tickfont = dict(size=10)),
+                    xaxis_showgrid = False, 
+                    legend = dict(yanchor = "bottom", y = 0.95, xanchor = "left", x = 0.01,  orientation="h"))
+
+    # Show the figure
+    return fig
+
+
+def plot_aggregation_guaussianity(price_df, yahoo_df):
+
+    resample_price_df_1 = price_df.groupby(price_df.index // 5).last()
+    resample_price_df_2 = price_df.groupby(price_df.index // 10).last()
+
+
+    resample_price_df_1['return_mid_price'] = np.log(resample_price_df_1['Mid Price']).diff()
+    resample_price_df_2['return_mid_price'] = np.log(resample_price_df_2['Mid Price']).diff()
+
+
+    monthly_df = yahoo_df.to_period('M').groupby('Date').last()
+    yearly_df = yahoo_df.to_period('Y').groupby('Date').last()
+
+    monthly_df['return'] = np.log(monthly_df['Close']).diff()
+    yearly_df['return'] = np.log(yearly_df['Close']).diff()
+
+
+    fig = make_subplots(rows=2, cols=3, subplot_titles = ['Small Time Steps', 'Medium Time Steps', 'Large Time Steps', 'Daily', 'Monthly', 'Yearly'])
+    temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
+
+    simulated_daily_return_histogram = go.Histogram(x = price_df['return_mid_price'], nbinsx = 100,  histnorm = 'density', marker_color = 'blue')
+    simulated_monthly_return_histogram = go.Histogram(x = resample_price_df_1['return_mid_price'], nbinsx = 20,  histnorm = 'density', marker_color = 'blue')
+    simulated_yearly_return_histogram = go.Histogram(x = resample_price_df_2['return_mid_price'], nbinsx = 10,  histnorm = 'density', marker_color = 'blue')
+
+    daily_return_histogram = go.Histogram(x = yahoo_df['return'], nbinsx = 300,  histnorm = 'density', marker_color = 'rgba(0, 128, 0, 0.6)')
+    monthly_return_histogram = go.Histogram(x = monthly_df['return'], nbinsx = 30,  histnorm = 'density', marker_color = 'rgba(0, 128, 0, 0.6)')
+    yearly_return_histogram = go.Histogram(x = yearly_df['return'], nbinsx = 6,  histnorm = 'density', marker_color = 'rgba(0, 128, 0, 0.6)')
+
+
+    fig.add_trace(simulated_daily_return_histogram, row = 1, col = 1)
+    fig.add_trace(simulated_monthly_return_histogram, row = 1, col = 2)
+    fig.add_trace(simulated_yearly_return_histogram, row = 1, col = 3)
+
+
+    fig.add_trace(daily_return_histogram, row = 2, col = 1)
+    fig.add_trace(monthly_return_histogram, row = 2, col = 2)
+    fig.add_trace(yearly_return_histogram, row = 2, col = 3)
+
+
+    fig.update_layout(template = temp,
+                        title = 'Stylized Fact - Aggregational Gaussianity',
+                        hovermode = 'closest',
+                        bargap = 0.05,
+                        margin = dict(l = 40, r = 40, t = 80, b = 40),
+                        height = 600, 
+                        width = 1000, 
+                        showlegend = False,
+                        xaxis = dict(tickfont=dict(size=10)),  
+                        xaxis2 = dict(tickfont=dict(size=10)),  
+                        yaxis = dict(side = "left", tickfont = dict(size=10)),
+                        xaxis_showgrid = False, 
+                        legend = dict(yanchor = "bottom", y = 0.95, xanchor = "left", x = 0.01,  orientation = "h"))
 
     return fig 

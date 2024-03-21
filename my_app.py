@@ -10,7 +10,7 @@ from static import *
 
 
 # ----------- Simulation ------------------------------
-steps = 1000
+steps = 10
 model = abmodel(static_map_v0(), all_agents())
 model.run_model(steps)
 model_results = model.datacollector.get_model_vars_dataframe()
@@ -34,8 +34,10 @@ bid_ask_price_fig = model.bank_details.price_plot()
 top_of_the_book_fig = model.bank_details.top_of_book_plot()
 
 
-
-
+# stylized facts check plot
+price_df = get_price_df(model, model_results, steps)
+yahoo_df, interest_rate_df, merge_df = get_market_data(start_date, end_date, api_key)
+interest_rate_diff_and_price_fig = plot_interest_rate_and_price(merge_df, price_df)
 
 
 # ---------------------------------------------------
@@ -131,7 +133,7 @@ app.layout = html.Div([
 
         html.Div(children = [dcc.Graph(id = "Banks LOB Chart", figure = banks_lob_fig, style = {'margin-left' : '10px'})], style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
 
-        html.P(children = '2-5.) Stylized Effect of the FX Market', id = 'limit_order_book_title', style = {'font-size': '20px', 
+        html.P(children = '2-5.) Stylized Effect of the FX Market - Interest Rate Movement & Price Dynamics', id = 'stylized_effect_title', style = {'font-size': '20px', 
                                                                                                                  'width': '50%', 
                                                                                                                  'border-radius': '20px', 
                                                                                                                  'text-align': 'left', 
@@ -141,9 +143,18 @@ app.layout = html.Div([
                                                                                                                  'margin-up' : "-120px", 
                                                                                                                  'background' : 'rgb(233 238 246)'}),
 
+        html.Div(children = [dcc.Graph(id = "IR Diff and Price Chart", figure = interest_rate_diff_and_price_fig, style = {'margin-left' : '10px'})], style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
+
+
+
+
+
         html.Footer("© 2024 Agent-Based Modeling Team Banana. All rights reserved.", style={'text-align': 'center', 'color': '#555', 'padding': '10px', 'margin-top': '20px'})
 ]) 
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+
+        app.run_server(debug=True)
+
+
