@@ -179,13 +179,13 @@ class agent_corporate_v0(mesa.Agent):
         uti = round(self.improve_utility, 2)
 
         org_utility = self.calculate_utility(self.currencyA, self.currencyB)
-        target_utility = org_utility * uti
+        target_utility = org_utility * 1.01
         cost_total = self.cost_currencyA + self.cost_currencyB
         org_slope = (org_utility ** (cost_total/self.cost_currencyB)) * (-self.cost_currencyA/self.cost_currencyB) * (self.currencyA**(-(self.cost_currencyA/self.cost_currencyB + 1)))
         utility = org_utility
         change_currencyA = 0
         change_currencyB = 0
-        mid_price = np.random.normal(loc=100, scale=5, size=None)
+        mid_price = np.random.normal(loc = mid_price, scale=10, size=None)
         
         if org_slope < -1:
             while ((utility < target_utility) & (abs(change_currencyB) < self.currencyB*0.5)):

@@ -84,10 +84,10 @@ class params_corporate_v0():
     def __init__(self):
         self.init_population = 200
         self.country = ["A", "B"]
-        self.asset_min = 400
-        self.asset_max = 800
-        self.costs_min = 15
-        self.costs_max = 25
+        self.asset_min = 100
+        self.asset_max = 200
+        self.costs_min = 5
+        self.costs_max = 10
         self.level_min = 1
         self.level_max = 5
         
@@ -177,9 +177,9 @@ class static_map_v0():
         for i in range(us_map.shape[0]):
             for j in range(us_map.shape[1]):
                 if j < 60:
-                    adj_us_map.append(us_map[i][j])
+                    adj_us_map.append(us_map[i][j] * 15)
                 else:
-                    adj_us_map.append(us_map[i][j])
+                    adj_us_map.append(us_map[i][j] * 15)
         adj_us_map = np.array(adj_us_map).reshape(us_map.shape)
                 
         
@@ -187,9 +187,9 @@ class static_map_v0():
         for i in range(us_map.shape[0]):
             for j in range(us_map.shape[1]):
                 if j > 60:
-                    adj_jp_map.append(jp_map[i][j] * 2)
+                    adj_jp_map.append(jp_map[i][j] * 2 * 15)
                 else:
-                    adj_jp_map.append(jp_map[i][j] * 2)
+                    adj_jp_map.append(jp_map[i][j] * 15)
         adj_jp_map = np.array(adj_jp_map).reshape(us_map.shape)
                     
             
