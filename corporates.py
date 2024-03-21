@@ -179,7 +179,7 @@ class agent_corporate_v0(mesa.Agent):
         uti = round(self.improve_utility, 2)
 
         org_utility = self.calculate_utility(self.currencyA, self.currencyB)
-        target_utility = org_utility * 1.01
+        target_utility = org_utility * 1.001
         cost_total = self.cost_currencyA + self.cost_currencyB
         org_slope = (org_utility ** (cost_total/self.cost_currencyB)) * (-self.cost_currencyA/self.cost_currencyB) * (self.currencyA**(-(self.cost_currencyA/self.cost_currencyB + 1)))
         utility = org_utility
