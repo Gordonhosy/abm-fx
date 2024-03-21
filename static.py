@@ -140,8 +140,8 @@ class params_arbitrager():
     '''
     def __init__(self):
         self.init_pos = [(24,15), (24,35), (24, 50), (24, 75)]
-        self.asset_min = 3000
-        self.asset_max = 3000
+        self.asset_min = 1000
+        self.asset_max = 1000
         self.costs_min = 1
         self.costs_max = 2
         self.vision_min = 50
@@ -177,9 +177,9 @@ class static_map_v0():
         for i in range(us_map.shape[0]):
             for j in range(us_map.shape[1]):
                 if j < 60:
-                    adj_us_map.append(us_map[i][j] * 10)
+                    adj_us_map.append(us_map[i][j])
                 else:
-                    adj_us_map.append(us_map[i][j] * 2)
+                    adj_us_map.append(us_map[i][j])
         adj_us_map = np.array(adj_us_map).reshape(us_map.shape)
                 
         
@@ -187,9 +187,9 @@ class static_map_v0():
         for i in range(us_map.shape[0]):
             for j in range(us_map.shape[1]):
                 if j > 60:
-                    adj_jp_map.append(jp_map[i][j] * 6)
+                    adj_jp_map.append(jp_map[i][j] * 2)
                 else:
-                    adj_jp_map.append(jp_map[i][j] * 0.7)
+                    adj_jp_map.append(jp_map[i][j] * 2)
         adj_jp_map = np.array(adj_jp_map).reshape(us_map.shape)
                     
             

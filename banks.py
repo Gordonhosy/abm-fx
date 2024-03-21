@@ -443,7 +443,7 @@ class agent_bank(mesa.Agent):
         # calculate the combination of currency A and B that gives the same utility
         cost_total = self.cost_currencyA + self.cost_currencyB
         utility = self.currencyA**(self.cost_currencyA/cost_total) * (self.currencyB**(self.cost_currencyB/cost_total))
-        indiff_currencyA = np.arange(int(self.currencyA*0.85), int(self.currencyA*1.15))
+        indiff_currencyA = np.arange(int(self.currencyA*0.9), int(self.currencyA*1.1))
         indiff_currencyB = (utility/(indiff_currencyA**(self.cost_currencyA/cost_total)))**(cost_total/self.cost_currencyB)
         
         # add premium for banks to earn
