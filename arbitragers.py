@@ -7,7 +7,6 @@ from banks import *
 
 class agent_arbitrager(mesa.Agent):
     '''
-    This is the first version of arbitragers
     Arbitragers:
     - Arbitragers finds arbitrage opportunities based on their tradable markets
     - Their trading volume is limited by their small asset size

@@ -56,7 +56,6 @@ class agent_corporate_v0(mesa.Agent):
         contents = self.model.grid.get_cell_list_contents(pos)
         for obj in contents:
             
-            # TO DO: need to include other agents as well later
             if isinstance(obj, agent_corporate_v0):
                 return True
         return False
@@ -66,7 +65,7 @@ class agent_corporate_v0(mesa.Agent):
         '''
         Function to calculate utility
         '''
-        # assume we use Cobb-Douglas
+        # due to the quote, we need to use an adjusted version here
         adj_cost_currencyB = self.cost_currencyB/ mid_price
         cost_total = self.cost_currencyA + adj_cost_currencyB
         return (currencyA**(self.cost_currencyA/cost_total)) * (currencyB**(adj_cost_currencyB/cost_total))
@@ -150,8 +149,8 @@ class agent_corporate_v0(mesa.Agent):
         '''
         Function for corporate to pay money each step
         '''
-        self.currencyA -= self.cost_currencyA * (1 + interest_rate_a)
-        self.currencyB -= self.cost_currencyB * (1 + interest_rate_b)
+        self.currencyA -= self.cost_currencyA * (1 + interest_rate_a * 2)
+        self.currencyB -= self.cost_currencyB * (1 + interest_rate_b * 2)
      
     
     def if_bankrupt(self):
@@ -179,7 +178,7 @@ class agent_corporate_v0(mesa.Agent):
         uti = round(self.improve_utility, 2)
 
         org_utility = self.calculate_utility(self.currencyA, self.currencyB, mid_price)
-        target_utility = org_utility * 1.01
+        target_utility = org_utility * uti
         
         adj_cost_currencyB = self.cost_currencyB / mid_price
         cost_total = self.cost_currencyA + adj_cost_currencyB
@@ -188,8 +187,8 @@ class agent_corporate_v0(mesa.Agent):
         utility = org_utility
         change_currencyA = 0
         change_currencyB = 0
-        mid_price = np.random.normal(loc = mid_price, scale=10, size=None)
-
+        # a random factor for quoting
+        mid_price = np.random.normal(loc = mid_price, scale = 20, size = None)
         
         if org_slope < -1:
             while ((utility < target_utility) & (abs(change_currencyB) < self.currencyB*0.5)):
@@ -203,9 +202,7 @@ class agent_corporate_v0(mesa.Agent):
                 change_currencyB += mid_price
                 utility = self.calculate_utility(self.currencyA + change_currencyA, self.currencyB + change_currencyB, mid_price)
                 
-       
-        # the changes need to be in opposite directions for a trade to happen
-        # if (change_currencyA * change_currencyB < 0) & (not math.isclose(change_currencyA, 0)):
+        # if there is a possible trade
         if utility > target_utility:
             
             if change_currencyA < 0:

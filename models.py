@@ -160,7 +160,7 @@ class abmodel(mesa.Model):
                 self.schedule.add(agent_rand_fund)
                 agent_id += 1        
         
-        self.corporate_details = self.corporate_class(self) # Issue about new corporates
+        self.corporate_details = self.corporate_class(self)
         self.bank_details = self.bank_class(self)
         #self.international_bank_details = self.international_bank_class(self)
         self.arbitrager_details = self.arbitrager_class(self)
@@ -213,7 +213,7 @@ class abmodel(mesa.Model):
                 corporate.traded_prices = []
                 corporate.traded_partners = []
                 corporate.traded_amount = []
-                corporate.move()
+                corporate.move(mid_price = self.bank_details.mid_price(self.schedule.steps))
 
             corporates_shuffle = self.randomise_agents(corporate_type.agent)
             for corporate in corporates_shuffle:
@@ -373,7 +373,7 @@ class abmodel(mesa.Model):
                     country_of_corporate = "B"
                 else:
                     country_of_corporate  = str(np.random.choice(corporate_type.params.country, p=[0.88, 0.12]))
-                    print(country_of_corporate)
+                    #print(country_of_corporate)
 
                 for i in range(random.randint(10, int(corporate_type.params.init_population * 0.1))):
 
@@ -712,7 +712,7 @@ class abmodel(mesa.Model):
                             hovermode = 'closest',
                             margin = dict(l = 30, r = 20, t = 50, b = 20),
                             height = 400, 
-                            width = 900, 
+                            width = 600, 
                             showlegend = True,
                             xaxis = dict(tickfont=dict(size=10)),
                             yaxis = dict(side = "left", tickfont = dict(size=10)),

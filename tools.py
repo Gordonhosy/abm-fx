@@ -12,19 +12,14 @@ def random_corporate(agent_id, corporate_type, static_map, model, country=None):
     '''
     generate random corporates at random postitions
     '''
-    # x = int(np.random.uniform(0, static_map.width))
-    # y = int(np.random.uniform(0, static_map.height))
 
     map_a = static_map.currencyA_map_init
     map_b = static_map.currencyB_map_init
     world_map = map_a + map_b
 
-    # non_zero_index = np.nonzero(world_map)
-    # shuffle_index_len = len(non_zero_index[0])
-    # random_pos_index = np.random.randint(0, shuffle_index_len, size=1)
 
     if country == None:
-        country = str(np.random.choice(corporate_type.params.country, p=[0.88, 0.12]))
+        country = str(np.random.choice(corporate_type.params.country, p=[0.88, 0.12])) # ratio according to empirical data
     else:
         country = country
     
@@ -51,8 +46,8 @@ def random_corporate(agent_id, corporate_type, static_map, model, country=None):
         amount_B = int(np.random.uniform(corporate_type.params.asset_min, corporate_type.params.asset_max + 1))
         currencyB = int(amount_B * 0.5 * level) * 100
 
-        cost_currencyA = int(np.random.uniform((corporate_type.params.costs_min + corporate_type.params.costs_max)/2, corporate_type.params.costs_max + 1)) * 1.5
-        cost_currencyB = int(np.random.uniform(corporate_type.params.costs_min, (corporate_type.params.costs_min + corporate_type.params.costs_max)/2)) * 100
+        cost_currencyA = int(np.random.uniform((corporate_type.params.costs_min + corporate_type.params.costs_max)/2, corporate_type.params.costs_max + 1)) 
+        cost_currencyB = int(np.random.uniform(corporate_type.params.costs_min, (corporate_type.params.costs_min + corporate_type.params.costs_max)/2)) * 100 * 2
 
     elif country == "B":
         amount_A = int(np.random.uniform(corporate_type.params.asset_min, corporate_type.params.asset_max + 1))
@@ -61,8 +56,8 @@ def random_corporate(agent_id, corporate_type, static_map, model, country=None):
         amount_B = int(np.random.uniform(corporate_type.params.asset_min, corporate_type.params.asset_max + 1))
         currencyB = int(amount_B * level) * 100
         
-        cost_currencyA = int(np.random.uniform(corporate_type.params.costs_min, (corporate_type.params.costs_min + corporate_type.params.costs_max)/2)) * 1.5
-        cost_currencyB = int(np.random.uniform((corporate_type.params.costs_min + corporate_type.params.costs_max)/2, corporate_type.params.costs_max + 1)) * 100
+        cost_currencyA = int(np.random.uniform(corporate_type.params.costs_min, (corporate_type.params.costs_min + corporate_type.params.costs_max)/2)) 
+        cost_currencyB = int(np.random.uniform((corporate_type.params.costs_min + corporate_type.params.costs_max)/2, corporate_type.params.costs_max + 1)) * 100 * 2
 
 
     if level == 1:
@@ -98,8 +93,8 @@ def central_bank_A(agent_id, central_bank_type, static_map, model):
     y = int(np.random.uniform(0, static_map.height))
     country = "A"
 
-    inflation_rate = 0 #0.04
-    interest_rate = 0 #0.0025
+    inflation_rate = 0.04
+    interest_rate = 0.0025
     growth_rate = interest_rate - inflation_rate 
     target_inflation_rate = 0.02
     currencyA = 1000000
@@ -130,8 +125,8 @@ def central_bank_B(agent_id, central_bank_type, static_map, model):
     y = int(np.random.uniform(0, static_map.height))
     country = "B"
 
-    inflation_rate = 0 #0.01
-    interest_rate = 0 #-0.0025
+    inflation_rate = 0.01
+    interest_rate = -0.0025
     growth_rate = interest_rate - inflation_rate 
     target_inflation_rate = 0.015
     currencyA = 0
@@ -164,15 +159,15 @@ def random_bank(agent_id, bank_type, init_pos, model):
     if y < 60: 
         currencyA = int(np.random.uniform(bank_type.params.local_asset_min, bank_type.params.local_asset_max + 1))
         currencyB = int(np.random.uniform(bank_type.params.foreign_asset_min, bank_type.params.foreign_asset_max + 1)) * 100
-        cost_currencyA = int(np.random.uniform(bank_type.params.local_costs_min, bank_type.params.local_costs_max + 1)) * 0.12
-        cost_currencyB = int(np.random.uniform(bank_type.params.foreign_costs_min, bank_type.params.foreign_costs_max + 1)) * 0.115
+        cost_currencyA = int(np.random.uniform(bank_type.params.local_costs_min, bank_type.params.local_costs_max + 1)) * 0.12 * 0.3
+        cost_currencyB = int(np.random.uniform(bank_type.params.foreign_costs_min, bank_type.params.foreign_costs_max + 1)) * 0.115 * 0.3
     
     # if it is a bank in country B --> JAPAN
     elif y >= 60:
         currencyA = int(np.random.uniform(bank_type.params.foreign_asset_min, bank_type.params.foreign_asset_max + 1))
         currencyB = int(np.random.uniform(bank_type.params.local_asset_min, bank_type.params.local_asset_max + 1)) * 100
-        cost_currencyA = int(np.random.uniform(bank_type.params.foreign_costs_min, bank_type.params.foreign_costs_max + 1)) * 0.12
-        cost_currencyB = int(np.random.uniform(bank_type.params.local_costs_min, bank_type.params.local_costs_max + 1)) * 0.115
+        cost_currencyA = int(np.random.uniform(bank_type.params.foreign_costs_min, bank_type.params.foreign_costs_max + 1)) * 0.12 * 0.3
+        cost_currencyB = int(np.random.uniform(bank_type.params.local_costs_min, bank_type.params.local_costs_max + 1)) * 0.115 * 0.3
     
     vision = int(np.random.uniform(bank_type.params.vision_min, bank_type.params.vision_max + 1))
     

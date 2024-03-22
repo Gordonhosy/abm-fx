@@ -5,10 +5,9 @@ import numpy as np
 
 class agent_central_bank_v0(mesa.Agent):
     """
-    Central Bank Agent, very unrealistic one. \\
     Central Bank:
     - Aims to stabilize inflation to a target level and smooth economic growth.
-    - the current idea is trying to mimic an economic cycle to see how this affects the FX sport rate. \\
+    - the current idea is trying to mimic an economic cycle to see how this affects the FX sport rate.
     
     Parameters:
     - interest_rate 
@@ -57,7 +56,7 @@ class agent_central_bank_v0(mesa.Agent):
         """
         
         self.calculate_target_interest_rate() # Recalculate the target interest in every steps.
-        return
+        
         self.adjust_interest_rate() # Central bank observe the economic and response to it (cut, raise).
 
         self.economic_cycle() # macroeconomic policy is tightening/easing.

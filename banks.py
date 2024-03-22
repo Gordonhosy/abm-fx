@@ -9,7 +9,6 @@ from scipy.stats.mstats import winsorize
 
 class agent_bank(mesa.Agent):
     '''
-    This is the first version of local bank
     Local Bank:
     - The utility of a bank is determined by the Cobb-Douglas utility function
     - The local bank quotes a LOB based on its utility
@@ -36,7 +35,7 @@ class agent_bank(mesa.Agent):
         self.arbed_prices = []
         self.arbed_desks = []
         self.arbed_amount = []
-        self.premium = 0.01
+        self.premium = 0.02
         self.bid_book = [] # list of tuples (price, volume)
         self.ask_book = []
 
@@ -52,7 +51,6 @@ class agent_bank(mesa.Agent):
         contents = self.model.grid.get_cell_list_contents(pos)
         for obj in contents:
             
-            ##### Need to amend the agent corporate later, if there are more corporate types ##### 
             if isinstance(obj, agent_corporate_v0):
                 return True
         return False
@@ -499,7 +497,6 @@ class agent_bank(mesa.Agent):
         self.bid_book, self.ask_book = self.calc_bid_ask()
 
     def increase_costs(self, value_a = 0.5, value_b = 0.5):
-        # print("Increasing costs...")
         self.cost_currencyA += value_a
         self.cost_currencyB += value_b   
     
