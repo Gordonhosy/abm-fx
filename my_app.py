@@ -8,9 +8,11 @@ from tools import *
 from models import *
 from static import *
 
+import sys
+sys.setrecursionlimit(10000)
 
 # ----------- Simulation ------------------------------
-steps = 10
+steps = 30
 model = abmodel(static_map_v0(), all_agents())
 model.run_model(steps)
 model_results = model.datacollector.get_model_vars_dataframe()
@@ -22,7 +24,6 @@ map_resource_fig = plot_map(model)
 
 agent_position_df = built_agent_position_df(model, steps)
 agent_movement_fig = plot_agent_movement(model, agent_position_df)
-
 
 corporate_value_fig = corporate_value_and_interest_rate_plot(model, model_results, steps)
 bank_value_fig = bank_value_and_interest_rate_plot(model, model_results, steps)
@@ -38,6 +39,11 @@ top_of_the_book_fig = model.bank_details.top_of_book_plot()
 price_df = get_price_df(model, model_results, steps)
 yahoo_df, interest_rate_df, merge_df = get_market_data(start_date, end_date, api_key)
 interest_rate_diff_and_price_fig = plot_interest_rate_and_price(merge_df, price_df)
+
+
+volatility_clustering_fig = plot_volatility_clustering(price_df, yahoo_df)
+fat_tail_fig =  plot_fat_tail(yahoo_df, price_df)
+aggregational_gau_fig = plot_aggregation_guaussianity(price_df, yahoo_df)
 
 
 # ---------------------------------------------------
@@ -133,21 +139,21 @@ app.layout = html.Div([
 
         html.Div(children = [dcc.Graph(id = "Banks LOB Chart", figure = banks_lob_fig, style = {'margin-left' : '10px'})], style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
 
-        html.P(children = '2-5.) Stylized Effect of the FX Market - Interest Rate Movement & Price Dynamics', id = 'stylized_effect_title', style = {'font-size': '20px', 
-                                                                                                                 'width': '50%', 
-                                                                                                                 'border-radius': '20px', 
-                                                                                                                 'text-align': 'left', 
-                                                                                                                 'padding-left': "20px", 
-                                                                                                                 'font-family' : 'Roboto', 
-                                                                                                                 'margin-left' : "20px", 
-                                                                                                                 'margin-up' : "-120px", 
-                                                                                                                 'background' : 'rgb(233 238 246)'}),
+        # html.P(children = '2-5.) Stylized Effect of the FX Market - Interest Rate Movement & Price Dynamics', id = 'stylized_effect_title', style = {'font-size': '20px', 
+        #                                                                                                          'width': '50%', 
+        #                                                                                                          'border-radius': '20px', 
+        #                                                                                                          'text-align': 'left', 
+        #                                                                                                          'padding-left': "20px", 
+        #                                                                                                          'font-family' : 'Roboto', 
+        #                                                                                                          'margin-left' : "20px", 
+        #                                                                                                          'margin-up' : "-120px", 
+        #                                                                                                          'background' : 'rgb(233 238 246)'}),
 
-        html.Div(children = [dcc.Graph(id = "IR Diff and Price Chart", figure = interest_rate_diff_and_price_fig, style = {'margin-left' : '10px'})], style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
+        # html.Div(children = [dcc.Graph(id = "IR Diff and Price Chart", figure = interest_rate_diff_and_price_fig, style = {'margin-left' : '10px'})], style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
 
-
-
-
+        # html.Div(children = [dcc.Graph(id = "Volatility CLustering Fig", figure = volatility_clustering_fig, style = {'margin-left' : '10px'})], style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
+        # html.Div(children = [dcc.Graph(id = "fat_tail_fig", figure = fat_tail_fig, style = {'margin-left' : '10px'})], style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
+        # html.Div(children = [dcc.Graph(id = "aggregational_gau_fig", figure = aggregational_gau_fig, style = {'margin-left' : '10px'})], style = {'display': 'flex', 'flexDirection': 'row', 'gap': '35px'}),
 
         html.Footer("© 2024 Agent-Based Modeling Team Banana. All rights reserved.", style={'text-align': 'center', 'color': '#555', 'padding': '10px', 'margin-top': '20px'})
 ]) 
