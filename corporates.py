@@ -62,13 +62,14 @@ class agent_corporate_v0(mesa.Agent):
         return False
     
     
-    def calculate_utility(self, currencyA, currencyB):
+    def calculate_utility(self, currencyA, currencyB, mid_price):
         '''
         Function to calculate utility
         '''
         # assume we use Cobb-Douglas
-        cost_total = self.cost_currencyA + self.cost_currencyB
-        return (currencyA**(self.cost_currencyA/cost_total)) * (currencyB**(self.cost_currencyB/cost_total))
+        adj_cost_currencyB = self.cost_currencyB/ mid_price
+        cost_total = self.cost_currencyA + adj_cost_currencyB
+        return (currencyA**(self.cost_currencyA/cost_total)) * (currencyB**(adj_cost_currencyB/cost_total))
     
     
     def get_currency_amount(self, pos, currencyX_basic):
@@ -93,7 +94,7 @@ class agent_corporate_v0(mesa.Agent):
         return None
     
     
-    def move(self):
+    def move(self, mid_price):
         '''
         Corporate moves according to 4 steps
         '''
@@ -111,20 +112,18 @@ class agent_corporate_v0(mesa.Agent):
 
         # 2. Calculate utitlities
         utilities = [self.calculate_utility(self.currencyA + self.get_currency_amount(pos, currencyA_basic), \
-                        self.currencyB + self.get_currency_amount(pos, currencyB_basic)) for pos in neighbors_available]
+                        self.currencyB + self.get_currency_amount(pos, currencyB_basic), mid_price) for pos in neighbors_available]
 
         # 3. Find the best cell to move to
         options = [neighbors_available[i] for i in np.argwhere(utilities == np.amax(utilities)).flatten()]
 
-        if len(options) == 0:
-            print(self.unique_id)
         random.shuffle(options)
 
         if (self.pos in options) and (self.limit <= 3):
             final_decision = self.pos
             self.limit += 1
         else:
-            final_decision = options[0] # random choice if more than one max
+            final_decision = next(iter(options), self.pos) # random choice if more than one max
             self.limit = 0
         
         # 4. Move agent
@@ -169,6 +168,7 @@ class agent_corporate_v0(mesa.Agent):
         Function for corporates to put orders to trade FX
         The aim is to improve the utility by a certain amount
         '''
+        
         if self.trade_happened == True:
             if self.improve_utility < max(self.utilities):
                 uti = self.improve_utility + 0.01
@@ -178,26 +178,30 @@ class agent_corporate_v0(mesa.Agent):
 
         uti = round(self.improve_utility, 2)
 
-        org_utility = self.calculate_utility(self.currencyA, self.currencyB)
-        target_utility = org_utility * 1.001
-        cost_total = self.cost_currencyA + self.cost_currencyB
-        org_slope = (org_utility ** (cost_total/self.cost_currencyB)) * (-self.cost_currencyA/self.cost_currencyB) * (self.currencyA**(-(self.cost_currencyA/self.cost_currencyB + 1)))
+        org_utility = self.calculate_utility(self.currencyA, self.currencyB, mid_price)
+        target_utility = org_utility * 1.01
+        
+        adj_cost_currencyB = self.cost_currencyB / mid_price
+        cost_total = self.cost_currencyA + adj_cost_currencyB
+        
+        org_slope = (org_utility ** (cost_total/adj_cost_currencyB)) * (-self.cost_currencyA/adj_cost_currencyB) * (self.currencyA**(-(self.cost_currencyA/adj_cost_currencyB + 1)))
         utility = org_utility
         change_currencyA = 0
         change_currencyB = 0
         mid_price = np.random.normal(loc = mid_price, scale=10, size=None)
+
         
         if org_slope < -1:
             while ((utility < target_utility) & (abs(change_currencyB) < self.currencyB*0.5)):
                 change_currencyA += 1
                 change_currencyB -= mid_price
-                utility = self.calculate_utility(self.currencyA + change_currencyA, self.currencyB + change_currencyB)
+                utility = self.calculate_utility(self.currencyA + change_currencyA, self.currencyB + change_currencyB, mid_price)
                 
         else:
             while ((utility < target_utility) & (abs(change_currencyA) < self.currencyA*0.5)):
                 change_currencyA -= 1
                 change_currencyB += mid_price
-                utility = self.calculate_utility(self.currencyA + change_currencyA, self.currencyB + change_currencyB)
+                utility = self.calculate_utility(self.currencyA + change_currencyA, self.currencyB + change_currencyB, mid_price)
                 
        
         # the changes need to be in opposite directions for a trade to happen
