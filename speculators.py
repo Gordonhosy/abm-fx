@@ -46,6 +46,8 @@ class agent_speculator(mesa.Agent):
     def pay_costs(self):
         '''
         Function for speculator to pay money each step
+        So far it is not incorporated, and we allow negative currency amount for speculators only 
+        (because of their long short position)
         '''
         self.currencyA -= self.cost_currencyA
         self.currencyB -= self.cost_currencyB
@@ -76,8 +78,8 @@ class agent_speculator(mesa.Agent):
         '''
         Function for randomising moving average related strategies
         '''
-        ma = [(1, 5), (3, 10), (5, 20), (10, 60)]
-        sd = [0.5, 1, 1.25]
+        ma = [(1, 5), (1, 5), (3, 10), (3, 10), (5, 20), (10, 60)]
+        sd = [0.5, 0.75, 1, 1.25]
         return random.choice(ma), random.choice(sd)
     
     def adjust_aggressiveness(self):
@@ -230,7 +232,7 @@ class agent_speculator(mesa.Agent):
             last_mid = (bids[-1] + asks[-1]) / 2
             if ir_diff > 0.01:
                 # sizing
-                target_position = ir_diff * 10 * (self.currencyA + (self.currencyB/last_mid)) # amount in terms of currency A
+                target_position = ir_diff * 5 * (self.currencyA + (self.currencyB/last_mid)) # amount in terms of currency A (around 25% max)
                 target_in_B = target_position * last_mid
                 # need to increase borrow B to buy A
                 if (self.borrowB == 0) | (target_in_B/self.borrowB > 1.2):
@@ -281,7 +283,7 @@ class agent_speculator(mesa.Agent):
                 
             elif ir_diff < -0.01:
                 # sizing
-                target_position = -self.ir_diff * 10 * (self.currencyA + (self.currencyB/last_mid)) # amount in terms of currency A
+                target_position = -self.ir_diff * 5 * (self.currencyA + (self.currencyB/last_mid)) # amount in terms of currency A (around 25% max)
                 target_in_A = target_position
                 # need to increase borrow A buy B
                 if (self.borrowA == 0) | (target_in_A/self.borrowA > 1.2):

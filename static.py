@@ -152,10 +152,10 @@ class params_speculator():
     parameters for a speculator
     '''
     def __init__(self):
-        self.init_pos = [(15,46), (15,70), (14,46), (10,50), (25,42), (13, 65), (22,40), (14, 64)]
+        self.init_pos = [(15,46), (15,70), (14,46), (10,50), (25,42), (13, 65), (22,40), (16, 63)]
         self.strategies = ['mean revert', 'mean revert', 'uncoveredIR', 'momentum', 'mean revert', 'uncoveredIR', 'mean revert', 'uncoveredIR']
-        self.asset_min = 1800
-        self.asset_max = 2000
+        self.asset_min = 1600
+        self.asset_max = 1800
         self.costs_min = 1
         self.costs_max = 1
 
@@ -177,9 +177,9 @@ class static_map_v0():
         for i in range(us_map.shape[0]):
             for j in range(us_map.shape[1]):
                 if j < 60:
-                    adj_us_map.append(us_map[i][j] * 13 * 0.3)
+                    adj_us_map.append(us_map[i][j] * 5)
                 else:
-                    adj_us_map.append(us_map[i][j] * 13 * 0.3)
+                    adj_us_map.append(us_map[i][j] * 5)
         adj_us_map = np.array(adj_us_map).reshape(us_map.shape)
                 
         
@@ -187,9 +187,9 @@ class static_map_v0():
         for i in range(us_map.shape[0]):
             for j in range(us_map.shape[1]):
                 if j > 60:
-                    adj_jp_map.append(jp_map[i][j] * 2 * 13 * 0.3)
+                    adj_jp_map.append(jp_map[i][j] * 2 * 6)
                 else:
-                    adj_jp_map.append(jp_map[i][j] * 13 * 0.3)
+                    adj_jp_map.append(jp_map[i][j] * 2 * 6)
         adj_jp_map = np.array(adj_jp_map).reshape(us_map.shape)
                     
             

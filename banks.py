@@ -35,7 +35,7 @@ class agent_bank(mesa.Agent):
         self.arbed_prices = []
         self.arbed_desks = []
         self.arbed_amount = []
-        self.premium = 0.02
+        self.premium = 0.05
         self.bid_book = [] # list of tuples (price, volume)
         self.ask_book = []
 

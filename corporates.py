@@ -203,7 +203,7 @@ class agent_corporate_v0(mesa.Agent):
                 utility = self.calculate_utility(self.currencyA + change_currencyA, self.currencyB + change_currencyB, mid_price)
                 
         # if there is a possible trade
-        if utility > target_utility:
+        if (utility > target_utility) & (change_currencyA != 0):
             
             if change_currencyA < 0:
                 self.trade_direction = 'short'

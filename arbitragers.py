@@ -58,6 +58,7 @@ class agent_arbitrager(mesa.Agent):
     def pay_costs(self):
         '''
         Function for corporate to pay money each step
+        So far it is not incorporated
         '''
         self.currencyA -= self.cost_currencyA
         self.currencyB -= self.cost_currencyB
