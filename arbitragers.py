@@ -153,7 +153,10 @@ class agent_arbitrager(mesa.Agent):
                 ask_from_low.pop(0)
                 bid_from_high.pop(0)
                 capacity -= ask_amount
-                
+            
+            if (len(ask_from_low) == 0) | (len(bid_from_high) == 0):
+                return
+            
             next_ask = next(iter(ask_from_low))
             next_bid = next(iter(bid_from_high))
                 

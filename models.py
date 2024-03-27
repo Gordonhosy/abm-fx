@@ -235,13 +235,6 @@ class abmodel(mesa.Model):
         self.speculator_details.update_ex_trades(self, self.schedule.steps + 1)
             
         # banks
-        '''
-        bank_value = [self.bank_details.by_step(i)['Firm Value'].mean() / 10 for i in range(self.schedule.steps)]
-        try:
-            bank_value = bank_value[-1]
-        except:
-            bank_value = 0
-        '''
 
         for bank_type in self.all_agents.banks:
             banks_shuffle = self.randomise_agents(bank_type.agent)
@@ -257,49 +250,6 @@ class abmodel(mesa.Model):
                 bank.arbed_amount = []
                 bank.trade_with_corps_funds()
 
-                '''
-                if (bank_value < 1000):
-                    self.direction.append(1)
-                elif (1000 < bank_value < 2000):
-                    self.direction.append(2)
-                elif (2000 < bank_value < 3000):
-                    self.direction.append(3)    
-
-                if (self.milestone == False) and (1500 > bank_value > 1000):
-                    print("#1 Check succeed")
-                    if (self.direction[-1] >= self.direction[-2]):
-                        bank.increase_costs(5,5)
-                    else:
-                        bank.increase_costs(-2,-2)
-
-                    self.milestone = True
-
-                elif (2000 > bank_value > 1500) and (self.milestone == True):
-                    print("#2 Check succeed")
-                    if (self.direction[-1] >= self.direction[-2]):
-                        bank.increase_costs(10,10)
-                    else:
-                        bank.increase_costs(-5,-5)
-
-                    self.milestone = False
-
-                elif (2500 > bank_value > 2000) and (self.milestone == False):
-                    print("#3 Check succeed")
-                    if (self.direction[-1] >= self.direction[-2]):
-                        bank.increase_costs(15,15)
-                    else:
-                        bank.increase_costs(-10,-10)
-
-                    self.milestone = True
-
-                elif (bank_value > 2500) and (self.milestone == True):
-                    print("#4 Check succeed")
-                    if (self.direction[-1] >= self.direction[-2]):
-                        bank.increase_costs(25,25)
-                    else:
-                        bank.increase_costs(-15,-15)
-                    self.milestone = False
-                    '''
             
             banks_shuffle = self.randomise_agents(bank_type.agent)
             for bank in banks_shuffle:
@@ -700,8 +650,8 @@ class abmodel(mesa.Model):
             # ----- Plotly Version ------
             fig = make_subplots(rows=1, cols=1)
             temp = dict(layout=go.Layout(font=dict(family="Franklin Gothic", size = 12)))
-            bid_price = go.Bar(x = list(interbank_bid_round.keys()), y = list(interbank_bid.values()), name = 'Bid', marker = dict(color = 'darkblue'))
-            ask_price = go.Bar(x = list(interbank_ask_round.keys()), y = list(interbank_ask.values()), name = 'Ask', marker = dict(color = 'darkred'))
+            bid_price = go.Bar(x = list(interbank_bid.keys()), y = list(interbank_bid.values()), name = 'Bid', marker = dict(color = 'darkblue'))
+            ask_price = go.Bar(x = list(interbank_ask.keys()), y = list(interbank_ask.values()), name = 'Ask', marker = dict(color = 'darkred'))
 
             fig.add_trace(bid_price, row = 1, col = 1)
             fig.add_trace(ask_price, row = 1, col = 1)

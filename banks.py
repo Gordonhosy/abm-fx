@@ -5,7 +5,7 @@ import random
 import math
 from corporates import *
 from speculators import *
-from scipy.stats.mstats import winsorize
+
 
 class agent_bank(mesa.Agent):
     '''
@@ -164,11 +164,11 @@ class agent_bank(mesa.Agent):
         Function to see if both are better off after a trade
         '''
         if price >= 1:
-            currencyA_exchange = 1
-            currencyB_exchange = round(price, 2)
+            currencyA_exchange = 100
+            currencyB_exchange = round(price, 2)*100
         else:
-            currencyA_exchange = round(1/price, 2)
-            currencyB_exchange = 1
+            currencyA_exchange = round(1/price, 2)*100
+            currencyB_exchange = 100
         
         new_self_currencyA = self.currencyA + currencyA_exchange
         new_opponent_currencyA = opponent.currencyA - currencyA_exchange
@@ -279,12 +279,12 @@ class agent_bank(mesa.Agent):
         random.shuffle(neighbors)
         
         for opponent in neighbors:
-            if opponent:
-                if (opponent.amount is None) | ((opponent.price is None) | (opponent.trade_direction is None) | (opponent.amount == 0)): # the corporate/speculator does not want to trade
-                    pass
-                else:
-                    self.trade_LOB(opponent)
-                    self.update_bid_ask()
+            if (opponent.amount is None) | ((opponent.price is None) | (opponent.trade_direction is None) | (opponent.amount == 0)): # the corporate/speculator does not want to trade
+                pass
+            else:
+                self.trade_LOB(opponent)
+                self.update_bid_ask()
+        
         return
     
     
@@ -441,7 +441,7 @@ class agent_bank(mesa.Agent):
         # calculate the combination of currency A and B that gives the same utility
         cost_total = self.cost_currencyA + self.cost_currencyB
         utility = self.currencyA**(self.cost_currencyA/cost_total) * (self.currencyB**(self.cost_currencyB/cost_total))
-        indiff_currencyA = np.arange(int(self.currencyA*0.9), int(self.currencyA*1.1))
+        indiff_currencyA = np.arange(int(self.currencyA*0.7), int(self.currencyA*1.3))
         indiff_currencyB = (utility/(indiff_currencyA**(self.cost_currencyA/cost_total)))**(cost_total/self.cost_currencyB)
         
         # add premium for banks to earn
@@ -464,10 +464,12 @@ class agent_bank(mesa.Agent):
                     bid_book_dict[price] = 1
         
         org_bid = list(bid_book_dict.keys())
-        
-        for price in [max(org_bid), min(org_bid)]:
-            if price in bid_book_dict:
-                del bid_book_dict[price]
+        if len(org_bid) == 0:
+            pass
+        else:
+            for price in [max(org_bid), min(org_bid)]:
+                if price in bid_book_dict:
+                    del bid_book_dict[price]
         
         
         ask_book_dict = {}
@@ -482,10 +484,12 @@ class agent_bank(mesa.Agent):
                     ask_book_dict[price] = 1
                     
         org_ask = list(ask_book_dict.keys())
-        
-        for price in [max(org_ask), min(org_ask)]:
-            if price in ask_book_dict:
-                del ask_book_dict[price]
+        if len(org_ask) == 0:
+            pass
+        else:
+            for price in [max(org_ask), min(org_ask)]:
+                if price in ask_book_dict:
+                    del ask_book_dict[price]
         
         return list(bid_book_dict.items()), list(ask_book_dict.items())
     

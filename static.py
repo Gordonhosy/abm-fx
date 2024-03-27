@@ -106,12 +106,12 @@ class params_local_bank():
 
         self.init_pos = [(13,3), (3,3), (10,51), (23,44),  # US Bank 
                          (16, 67), (15, 71), (15, 67), (7,73)] # JP Bank
-        self.local_asset_min = 1200
-        self.local_asset_max = 2500
+        self.local_asset_min = 12000
+        self.local_asset_max = 25000
         self.local_costs_min = 20
         self.local_costs_max = 25
-        self.foreign_asset_min = 700
-        self.foreign_asset_max = 1200
+        self.foreign_asset_min = 7000
+        self.foreign_asset_max = 12000
         self.foreign_costs_min = 15
         self.foreign_costs_max = 20
         self.vision_min = 50
@@ -131,8 +131,8 @@ class params_international_bank():
         self.foreign_asset_max = 2000
         self.foreign_costs_min = 12
         self.foreign_costs_max = 20
-        self.vision_min = 50
-        self.vision_max = 50
+        self.vision_min = 100
+        self.vision_max = 100
         
 class params_arbitrager():
     '''
@@ -140,22 +140,22 @@ class params_arbitrager():
     '''
     def __init__(self):
         self.init_pos = [(24,15), (24,35), (24, 50), (24, 75)]
-        self.asset_min = 2000
-        self.asset_max = 2000
+        self.asset_min = 25000
+        self.asset_max = 25000
         self.costs_min = 1
         self.costs_max = 2
-        self.vision_min = 50
-        self.vision_max = 50
+        self.vision_min = 100
+        self.vision_max = 100
         
 class params_speculator():
     '''
     parameters for a speculator
     '''
     def __init__(self):
-        self.init_pos = [(15,46), (15,70), (14,46), (10,50), (25,42), (13, 65), (22,40), (16, 63)]
-        self.strategies = ['mean revert', 'mean revert', 'uncoveredIR', 'momentum', 'mean revert', 'uncoveredIR', 'mean revert', 'uncoveredIR']
-        self.asset_min = 1600
-        self.asset_max = 1800
+        self.init_pos = [(15,46), (15,70), (14,46), (10,50), (25,42), (13, 65), (22, 40), (16, 63), (13, 64)]
+        self.strategies = ['mean revert', 'mean revert', 'uncoveredIR', 'momentum', 'mean revert', 'uncoveredIR', 'mean revert', 'mean revert', 'momentum']
+        self.asset_min = 10000 / 2
+        self.asset_max = 12000 / 2
         self.costs_min = 1
         self.costs_max = 1
 
@@ -177,9 +177,9 @@ class static_map_v0():
         for i in range(us_map.shape[0]):
             for j in range(us_map.shape[1]):
                 if j < 60:
-                    adj_us_map.append(us_map[i][j] * 5)
+                    adj_us_map.append(us_map[i][j] * 10)
                 else:
-                    adj_us_map.append(us_map[i][j] * 5)
+                    adj_us_map.append(us_map[i][j] * 10)
         adj_us_map = np.array(adj_us_map).reshape(us_map.shape)
                 
         
@@ -187,9 +187,9 @@ class static_map_v0():
         for i in range(us_map.shape[0]):
             for j in range(us_map.shape[1]):
                 if j > 60:
-                    adj_jp_map.append(jp_map[i][j] * 2 * 6)
+                    adj_jp_map.append(jp_map[i][j] * 14)
                 else:
-                    adj_jp_map.append(jp_map[i][j] * 2 * 6)
+                    adj_jp_map.append(jp_map[i][j] * 14)
         adj_jp_map = np.array(adj_jp_map).reshape(us_map.shape)
                     
             

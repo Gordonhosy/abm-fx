@@ -149,8 +149,8 @@ class agent_corporate_v0(mesa.Agent):
         '''
         Function for corporate to pay money each step
         '''
-        self.currencyA -= self.cost_currencyA * (1 + interest_rate_a * 2)
-        self.currencyB -= self.cost_currencyB * (1 + interest_rate_b * 2)
+        self.currencyA -= self.cost_currencyA * (1 + interest_rate_a)
+        self.currencyB -= self.cost_currencyB * (1 + interest_rate_b)
      
     
     def if_bankrupt(self):
@@ -188,18 +188,18 @@ class agent_corporate_v0(mesa.Agent):
         change_currencyA = 0
         change_currencyB = 0
         # a random factor for quoting
-        mid_price = np.random.normal(loc = mid_price, scale = 20, size = None)
+        mid_price = mid_price * np.exp(np.random.normal(loc = 0, scale = 1, size = None))/1.1
         
         if org_slope < -1:
             while ((utility < target_utility) & (abs(change_currencyB) < self.currencyB*0.5)):
-                change_currencyA += 1
-                change_currencyB -= mid_price
+                change_currencyA += 5
+                change_currencyB -= mid_price * 5
                 utility = self.calculate_utility(self.currencyA + change_currencyA, self.currencyB + change_currencyB, mid_price)
                 
         else:
             while ((utility < target_utility) & (abs(change_currencyA) < self.currencyA*0.5)):
-                change_currencyA -= 1
-                change_currencyB += mid_price
+                change_currencyA -= 5
+                change_currencyB += mid_price * 5
                 utility = self.calculate_utility(self.currencyA + change_currencyA, self.currencyB + change_currencyB, mid_price)
                 
         # if there is a possible trade

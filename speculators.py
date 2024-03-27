@@ -78,7 +78,7 @@ class agent_speculator(mesa.Agent):
         '''
         Function for randomising moving average related strategies
         '''
-        ma = [(1, 5), (1, 5), (3, 10), (3, 10), (5, 20), (10, 60)]
+        ma = [(1, 3), (1, 5), (2, 5), (3, 10), (5, 10)]
         sd = [0.5, 0.75, 1, 1.25]
         return random.choice(ma), random.choice(sd)
     
@@ -91,13 +91,13 @@ class agent_speculator(mesa.Agent):
         else:
             if self.amount is None:
                 delta = self.target_execution - (self.amount_placed - 0)/self.amount_placed # how many % of order is executed
-                self.aggressive = max(self.aggressive * (1 + delta), 0.01)
+                self.aggressive = min(max(self.aggressive * (1 + delta), 0.01), 0.3)
                 self.missing_amount = 0
                 self.amount_placed = None
                 
             else:
                 delta = self.target_execution - (self.amount_placed - self.amount)/self.amount_placed # how many % of order is executed
-                self.aggressive = max(self.aggressive * (1 + delta), 0.01)
+                self.aggressive = min(max(self.aggressive * (1 + delta), 0.01), 0.3)
                 self.missing_amount = self.amount
                 self.amount_placed = None
                 
@@ -118,6 +118,8 @@ class agent_speculator(mesa.Agent):
                 self.amount_placed = None
                 return None, None, None
             else:
+                if (None in bids) | (None in asks):
+                    return None, None, None
                 mid = [(x + y)/2 for x, y in zip(bids, asks)]
                 long_window = mid[-self.ma[1]:]
                 long_ma = np.mean(long_window)
@@ -131,7 +133,7 @@ class agent_speculator(mesa.Agent):
                         self.amount_placed = None
                         return None, None, None
                     else:
-                        self.rest = self.ma[0] - 1
+                        self.rest = 2 #self.ma[0] - 1
                         self.amount_placed = int(bet_size * leverage)
                         return 'long', int(bet_size * leverage), round(asks[-1]*(1 + self.aggressive), 2)
                     
@@ -142,7 +144,7 @@ class agent_speculator(mesa.Agent):
                         self.amount_placed = None
                         return None, None, None 
                     else:
-                        self.rest = self.ma[0] - 1
+                        self.rest = 2 #self.ma[0] - 1
                         self.amount_placed = int(bet_size * leverage)
                         return 'short', int(bet_size * leverage), round(bids[-1]*(1 - self.aggressive), 2)
                 else:
@@ -171,6 +173,8 @@ class agent_speculator(mesa.Agent):
                 self.amount_placed = None
                 return None, None, None
             else:
+                if (None in bids) | (None in asks):
+                    return None, None, None
                 mid = [(x + y)/2 for x, y in zip(bids, asks)]
                 long_window = mid[-self.ma[1]:]
                 long_ma = np.mean(long_window)
@@ -184,7 +188,7 @@ class agent_speculator(mesa.Agent):
                         self.amount_placed = None
                         return None, None, None
                     else:
-                        self.rest = self.ma[0] - 1
+                        self.rest = 2 #self.ma[0] - 1
                         self.amount_placed = int(bet_size * leverage)
                         return 'long', int(bet_size * leverage), round(asks[-1]*(1 + self.aggressive), 2)
                     
@@ -195,7 +199,7 @@ class agent_speculator(mesa.Agent):
                         self.amount_placed = None
                         return None, None, None 
                     else:
-                        self.rest = self.ma[0] - 1
+                        self.rest = 2 #self.ma[0] - 1
                         self.amount_placed = int(bet_size * leverage)
                         return 'short', int(bet_size * leverage), round(bids[-1]*(1 - self.aggressive), 2)
                 else:
@@ -229,6 +233,8 @@ class agent_speculator(mesa.Agent):
             # see if there are trading opportunities
             ir_diff = interest_rate[0] - interest_rate[1]
             bids, asks = model.bank_details.top_of_book()
+            if (bids[-1] is None) | (asks[-1] is None):
+                return None, None, None
             last_mid = (bids[-1] + asks[-1]) / 2
             if ir_diff > 0.01:
                 # sizing
